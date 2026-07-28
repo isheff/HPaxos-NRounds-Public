@@ -45,7 +45,13 @@ Note that if you're going to prove stuff about macro `HasDepth`, you want to use
 We prove, for example, `AgreementM`, that for any set of Messages satisfying all these assumptions, any two contradictory decisions prove their learners are disconnected. 
 We also prove `MultiplePrevImpliesCaught`, which says that any message with multiple `Prev`s catches its signer, and `CaughtPrev`, which proves that the definition of `Caught` we're using (two messages in the transitive history, neither of which is in the transitive history of the other) is exactly equal to the other definition of Caught (two messages in the transitive history that share a `Prev`).
 
+### `MessageConcrete` and `HPaxosPlusCalConcrete`
 See `MessageConcrete` for a real construction of the set of messages, and `MessageConcreteSupportsAssumptions` for proof that it supports these assumptions.
+
+In `HPaxosPlusCalConcrete`, we specify exactly what `HPaxosPlusCal` looks like when you use the concrete Messages instantiation. 
+Safe Acceptors track a set of `recent_messages`, and use that to construct and sent messages. 
+In `HPaxosPlusCalConcreteSpecEquivalence`, we prove that this is exactly equivalent to `HPaxosPlusCal` (when using the concrete instantiation of `MessageInterface`), except of course that it defines `recent_messages`, which is always strictly a function of `Msgs` and `known_messages`. 
+
 
 ## HPaxosPlusCal
 The actual live protocol is very simple, and most of the proofs follow directly from facts proven in `MessageInterface`. 
