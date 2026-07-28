@@ -10,6 +10,10 @@ The definitions of `Refs` and `Prev` are now a little different, but they're not
 I now use small modules: each lemma and theorem is its own module. 
 This makes `tlapm` proof checking _much_ faster: just run a bash loop or whatever to check `tlapm` over every `*.tla`. 
 
+### `depgraph.py`
+Because it's annoying to follow proofs when they're all split up like this, I added a python script that makes a dependency graph (as an svg) of a given module name. 
+For example, try `./depgraph.py AgreementM`, and it will make an svg that is hopefully useful in following how the `AgreementM` proof works. 
+
 
 ## Organization
 The idea here is that rather than building a concrete set of Messages and stuff, I establish ``Interfaces,'' sets of assumptions about constant sets of Messages, Values, Learners, etc. 
