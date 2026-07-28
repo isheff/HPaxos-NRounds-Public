@@ -182,11 +182,11 @@ DecisionFast(m, alpha, b) ==
   \E s \in SUBSET {x \in TranClosure(m) : B(x) = b} :
   LET L == ({alpha} \cup UNION {Con(alpha, x) : x \in s})
    IN /\ \A l \in L : SigS(s) \in Quorums(l)
-      /\ \A x \in s :
-        /\ L \subseteq Lrns(x)
-        /\ \A l \in L :
-           SigS({y \in TranExclusive(x) :
-                 B(y) = b /\ L \subseteq Lrns(y)}) \in Quorums(l)
+      /\ \A x \in s : L \subseteq Lrns(x)
+      /\ alpha \in ConFromCaught(alpha, CaughtS(s))
+        \* /\ \A l \in L :
+        \*    SigS({y \in TranExclusive(x) :
+                \*  B(y) = b /\ L \subseteq Lrns(y)}) \in Quorums(l)
 
 \* Extreme version of decisionFast
 \* assumes there is a learner l whose only quorum is the set of all Acceptors
@@ -204,7 +204,7 @@ DecisionFast(m, alpha, b) ==
 DecisionFastD(m,b, d) ==
   \E l \in Learners :
   /\ Quorums(l) = {Acceptors}
-  /\ \E x \in SUBSET TranClosure(m) :
+  /\ \E x \in TranClosure(m) :
      /\ Caught(x) = {}
      /\ \A y \in Tran(x) : B(y) = b
      /\ HasDepth(l, x, d)
