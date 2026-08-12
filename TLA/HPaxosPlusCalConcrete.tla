@@ -14,8 +14,9 @@
 \* wholesale with {y}, since y dominates everything s knew or had sent.  So it
 \* is maintained as the maximal antichain of "everything s knows or has itself
 \* sent" -- see CRecentIsMax / CRecentClosure below -- which is exactly the
-\* priors field a well-formed message of s must carry, since CFilterOut demands
-\* m.priors = CRefs(m).
+\* CANONICAL priors field for the next message.  (CFilterOut no longer demands
+\* m.priors = CRefs(m) -- canonicality is not digest-checkable -- but safe
+\* acceptors still always SEND canonically: CSafeSentCanonical below.)
 \*
 \* Each safe acceptor s is modeled as one process PER (s, x) PAIR it might ever
 \* receive.  That process's single step does three things atomically:
@@ -265,8 +266,9 @@ CSelfSent(s) == {m \in Msgs : Sig(m) = s}
 \* recent_messages[s] is precisely the maximal antichain of everything s knows
 \* or has sent.  This is the invariant that makes the two specs line up, and it
 \* is what "recent_messages represents the priors of the next message" means
-\* formally: CFilterOut forces a well-formed message's priors field to be
-\* CRefs, i.e. the maximal elements of its own history.
+\* formally: the candidate s builds carries CRefs -- the maximal elements of
+\* its own history -- as its priors, even though CWellFormed no longer forces
+\* that of every message.
 CRecentIsMax ==
   \A s \in SafeAcceptors :
     recent_messages[s] = CMMax(known_messages[s] \cup CSelfSent(s))
@@ -308,15 +310,30 @@ CAT(s, x) == (known_messages[s] \cup {x}) \cup CSelfSent(s)
 
 
 \* ===================================================================
+\* Canonicality of safe sends
+\* ===================================================================
+\* Every message a safe acceptor has ever sent carries exactly its refs as its
+\* priors.  Well-formedness no longer forces this of arbitrary (byz-sent)
+\* messages -- it is not decidable from digests -- but the record a safe
+\* acceptor BUILDS always has it, so it is an invariant of CSpec
+\* (CSafeSentCanonicalHolds), and it is the third leg of the refinement
+\* mapping in HPaxosPlusCalConcreteSpecEquivalence: it pins the abstract
+\* spec's nondeterministic forced-send witness to the built record.
+CSafeSentCanonical ==
+  \A m \in Msgs : Sig(m) \in SafeAcceptors => m.priors = Refs(m)
+
+\* ===================================================================
 \* Equivalence target
 \* ===================================================================
 \* The crux: on a state where a learn step is enabled, the record this module
-\* builds is well formed exactly when HPaxosPlusCal's forced-send has a witness,
-\* and is then THAT witness.  Given this, the two safe-acceptor actions assign
-\* the same Msgs' and the same known_messages', so the specs agree on
-\* (Msgs, known_messages) and this module merely carries recent_messages along.
-\* The guards and the known_messages assignment are syntactically identical, and
-\* the byz actions are too, so this is the whole content of the equivalence.
+\* builds is well formed exactly when HPaxosPlusCal's forced-send has a
+\* witness; it is then ITSELF a witness; and it is the only CANONICAL witness.
+\* Given this -- plus CSafeSentCanonical pinning the abstract choice -- the
+\* two safe-acceptor actions assign the same Msgs' and the same
+\* known_messages', so the specs agree on (Msgs, known_messages) and this
+\* module merely carries recent_messages along.  The guards and the
+\* known_messages assignment are syntactically identical, and the byz actions
+\* are too, so this is the whole content of the equivalence.
 \*
 \* Stated at ONE pair rather than as a \A over SafeAcceptors \X Messages: it is
 \* only ever needed, and only ever provable, at pairs passing the receive guard,
@@ -326,8 +343,12 @@ CForcedSendAgreesAt(s, x) ==
        <=> (\E y \in (Messages \ Proposals) :
               Sig(y) = s /\ TranExclusive(y) = CAT(s, x))
   /\ CWellFormed(CCand(s, x)) =>
-       CCand(s, x) = (CHOOSE y \in (Messages \ Proposals) :
-                        Sig(y) = s /\ TranExclusive(y) = CAT(s, x))
+       /\ CCand(s, x) \in (Messages \ Proposals)
+       /\ Sig(CCand(s, x)) = s
+       /\ TranExclusive(CCand(s, x)) = CAT(s, x)
+  /\ \A y \in (Messages \ Proposals) :
+       (Sig(y) = s /\ TranExclusive(y) = CAT(s, x) /\ y.priors = Refs(y))
+         => y = CCand(s, x)
 
 
 \* ===================================================================

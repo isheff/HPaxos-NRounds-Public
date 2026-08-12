@@ -24,12 +24,12 @@ LEMMA OneBStepT ==
   <2>2. /\ x \in Msgs
         /\ TranExclusive(x) \subseteq known_messages[self]
         /\ known_messages' = [known_messages EXCEPT ![self] = known_messages[self] \cup {x}]
-        /\ Msgs' = (LET T == (known_messages'[self] \cup {x})
-                                  \cup {m \in Msgs : Sig(m) = self} IN
-                       IF \E y \in (Messages \ Proposals) : Sig(y) = self /\ TranExclusive(y) = T
-                         THEN Msgs \cup {CHOOSE y \in (Messages \ Proposals) :
-                                             Sig(y) = self /\ TranExclusive(y) = T}
-                         ELSE Msgs)
+        /\ LET T == (known_messages'[self] \cup {x})
+                    \cup {m \in Msgs : Sig(m) = self}
+               W == {y \in (Messages \ Proposals) :
+                       Sig(y) = self /\ TranExclusive(y) = T}
+           IN \/ \E y \in W : Msgs' = Msgs \cup {y}
+              \/ (W = {} /\ Msgs' = Msgs)
      BY <2>1 DEF safe_acceptor_receives_message
   <2>1a. self \in SafeAcceptors  BY <2>1
   <2>kself. known_messages'[self] = known_messages[self] \cup {x}  BY <2>2, <1>i, <2>1a
@@ -37,10 +37,12 @@ LEMMA OneBStepT ==
   <2> DEFINE T == (known_messages'[self] \cup {x}) \cup {m \in Msgs : Sig(m) = self}
   <2> DEFINE TU == (known_messages[self] \cup {x}) \cup {m \in Msgs : Sig(m) = self}
   <2>tueqt. TU = T  BY <2>kself
-  <2>net. Msgs' = (IF \E y \in (Messages \ Proposals) : Sig(y) = self /\ TranExclusive(y) = T
-                        THEN Msgs \cup {CHOOSE y \in (Messages \ Proposals) :
-                                            Sig(y) = self /\ TranExclusive(y) = T}
-                        ELSE Msgs)
+  <2>net. \/ \E y \in {yy \in (Messages \ Proposals) :
+                         Sig(yy) = self /\ TranExclusive(yy) = T} :
+               Msgs' = Msgs \cup {y}
+          \/ ({yy \in (Messages \ Proposals) :
+                 Sig(yy) = self /\ TranExclusive(yy) = T} = {}
+              /\ Msgs' = Msgs)
      BY <2>2
   <2>netmono. Msgs \subseteq Msgs'  BY <2>net
   <2>knownmono. \A ss \in SafeAcceptors : known_messages[ss] \subseteq known_messages'[ss]
@@ -130,13 +132,18 @@ LEMMA OneBStepT ==
           BY <5>exU, <2>tueqt
         <5>ifcond. \E y \in (Messages \ Proposals) : Sig(y) = self /\ TranExclusive(y) = T
           BY <5>ex
-        <5> DEFINE y0 == CHOOSE y \in (Messages \ Proposals) : Sig(y) = self /\ TranExclusive(y) = T
-        <5>y0props. y0 \in (Messages \ Proposals) /\ Sig(y0) = self /\ TranExclusive(y0) = T
+        <5>wne. {yy \in (Messages \ Proposals) :
+                   Sig(yy) = self /\ TranExclusive(yy) = T} # {}
           BY <5>ifcond
+        <5>y0. PICK y0 \in {yy \in (Messages \ Proposals) :
+                              Sig(yy) = self /\ TranExclusive(yy) = T} :
+                 Msgs' = Msgs \cup {y0}
+          BY <2>net, <5>wne
+        <5>y0props. y0 \in (Messages \ Proposals) /\ Sig(y0) = self /\ TranExclusive(y0) = T
+          BY <5>y0
         <5>y0propsU. y0 \in (Messages \ Proposals) /\ Sig(y0) = self /\ TranExclusive(y0) = TU
           BY <5>y0props, <2>tueqt
-        <5>y0net. Msgs' = Msgs \cup {y0}  BY <2>net, <5>ifcond
-        <5>y0in. y0 \in Msgs'  BY <5>y0net
+        <5>y0in. y0 \in Msgs'  BY <5>y0
         <5>y0any. B(y0) = b /\ IsOneB(y0)
           BY <2>1a, <2>2, <2>xmsg, <4>xprop, <4>xbal, <5>nb, <4>bound2, <5>y0propsU, OneBAnyWitnessT
         <5> QED BY <5>y0in, <5>y0props, <5>y0any, <2>sceq

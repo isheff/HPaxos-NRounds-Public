@@ -131,9 +131,13 @@ CIsTwoA(m) ==
   /\ ~CIsProposal(m)
   /\ \E alpha \in Learners: CHasDepth(alpha, m, 1)
 
+\* NOTE: CFilterOut deliberately does NOT require m.priors = CRefs(m).
+\* Priors-canonicality is not decidable from bounded digests when a prior's
+\* signer has equivocated, so it cannot be part of the check an acceptor
+\* runs; instead it holds for every message a SAFE acceptor sends, as an
+\* invariant of HPaxosPlusCalConcrete (CSafeSentCanonical / CJoint).
 CFilterOut(m) ==
-  /\ CIsProposal(m) => CB(m) = m.payload.ballot
-  /\ m.priors = CRefs(m)
+  CIsProposal(m) => CB(m) = m.payload.ballot
 
 CWellFormed(m) ==
   /\ \E a \in CTran(m) : CIsProposal(a)

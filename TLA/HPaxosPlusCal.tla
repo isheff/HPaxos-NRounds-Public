@@ -76,15 +76,24 @@ ByzSenders == Senders \ SafeAcceptors
            known_messages[self[1]] := known_messages[self[1]] \cup {self[2]};
            \* Forced send: if a message signed by self[1] with history exactly
            \* (known_messages[self[1]] with self[2], plus self[1]'s own
-           \* sent messages) exists, one such message MUST be sent (taken
-           \* deterministically -- it is unique up to its history).
-           Msgs := LET T == (known_messages[self[1]] \cup {self[2]})
-                            \cup {m \in Msgs : Sig(m) = self[1]}
-                   IN IF \E y \in (Messages \ Proposals) :
-                           Sig(y) = self[1] /\ TranExclusive(y) = T
-                        THEN Msgs \cup {CHOOSE y \in (Messages \ Proposals) :
-                                             Sig(y) = self[1] /\ TranExclusive(y) = T}
-                        ELSE Msgs;
+           \* sent messages) exists, one such message MUST be sent -- ANY
+           \* such witness (the choice is nondeterministic: witnesses agree
+           \* on their history but may differ in their priors field, which
+           \* the interface does not observe).
+           either {
+             with (y \in LET T == (known_messages[self[1]] \cup {self[2]})
+                                  \cup {m \in Msgs : Sig(m) = self[1]}
+                         IN {z \in (Messages \ Proposals) :
+                               Sig(z) = self[1] /\ TranExclusive(z) = T}) {
+               Msgs := Msgs \cup {y};
+             }
+           } or {
+             when LET T == (known_messages[self[1]] \cup {self[2]})
+                           \cup {m \in Msgs : Sig(m) = self[1]}
+                  IN ~\E z \in (Messages \ Proposals) :
+                        Sig(z) = self[1] /\ TranExclusive(z) = T;
+             skip;
+           };
          }
      }
 
@@ -116,13 +125,12 @@ Init == (* Global variables *)
 safe_acceptor_receives_message(self) == /\ self[2] \in Msgs
                                         /\ TranExclusive(self[2]) \subseteq known_messages[self[1]]
                                         /\ known_messages' = [known_messages EXCEPT ![self[1]] = known_messages[self[1]] \cup {self[2]}]
-                                        /\ Msgs' = (LET T == (known_messages'[self[1]] \cup {self[2]})
-                                                             \cup {m \in Msgs : Sig(m) = self[1]}
-                                                    IN IF \E y \in (Messages \ Proposals) :
-                                                            Sig(y) = self[1] /\ TranExclusive(y) = T
-                                                         THEN Msgs \cup {CHOOSE y \in (Messages \ Proposals) :
-                                                                              Sig(y) = self[1] /\ TranExclusive(y) = T}
-                                                         ELSE Msgs)
+                                        /\ LET T == (known_messages'[self[1]] \cup {self[2]})
+                                                    \cup {m \in Msgs : Sig(m) = self[1]}
+                                               W == {y \in (Messages \ Proposals) :
+                                                       Sig(y) = self[1] /\ TranExclusive(y) = T}
+                                           IN \/ \E y \in W : Msgs' = Msgs \cup {y}
+                                              \/ (W = {} /\ Msgs' = Msgs)
 
 byz(self) == /\ \E y \in {z \in Messages : Sig(z) = self /\ TranExclusive(z) \subseteq Msgs}:
                   Msgs' = (Msgs \cup {y})

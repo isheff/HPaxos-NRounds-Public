@@ -10,7 +10,7 @@ EXTENDS HPaxosPlusCalConcrete, CNextFromNext, CJointFromAux, AuxHoldsT, TLAPS
 
 LEMMA CAbstractSimulated ==
   ASSUME ConcreteMessageInterface, SafeAcceptorsAssumption
-  PROVE  Spec /\ []CRecentOK => CSpec
+  PROVE  Spec /\ []CRecentOK /\ []CSafeSentCanonical => CSpec
 <1>init. Init /\ CRecentOK => CInit
   <2> SUFFICES ASSUME Init, CRecentOK PROVE CInit
     OBVIOUS
@@ -31,7 +31,8 @@ LEMMA CAbstractSimulated ==
   BY AuxHoldsT
 <1>joint. AuxT /\ CRecentOK => CJoint
   BY CJointFromAux
-<1>step. CJoint /\ CRecentOK' /\ [Next]_vars => [CNext]_CVars
+<1>step. CJoint /\ CRecentOK' /\ CSafeSentCanonical' /\ [Next]_vars
+           => [CNext]_CVars
   BY CNextFromNext
 <1> QED
   BY <1>init, <1>aux, <1>joint, <1>step, PTL DEF Spec, CSpec

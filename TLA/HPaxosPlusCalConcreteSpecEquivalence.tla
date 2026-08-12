@@ -19,12 +19,18 @@
 \* unusable here (tlapm dies with Expr.Levels: ARITY elaborating
 \* MessageInterface's CombinedFreshQdLrnsIdR), so the mapping is stated as a
 \* constraint rather than substituted.  Same content either way.
+\*
+\* The third conjunct, []CSafeSentCanonical, pins the abstract spec's
+\* nondeterministic forced-send witness: witnesses agree on their history but
+\* not on their priors field, and only the canonical one is the record the
+\* concrete spec builds.  It costs nothing on the CSpec side -- honest
+\* acceptors always send canonically (CSafeSentCanonicalHolds).
 EXTENDS HPaxosPlusCalConcrete, CRefinesAbstract, CAbstractSimulated,
-        CJointHolds, TLAPS
+        CJointHolds, CSafeSentCanonicalHolds, TLAPS
 
 THEOREM HPaxosPlusCalConcreteSpecEquivalence ==
   ASSUME ConcreteMessageInterface, SafeAcceptorsAssumption
-  PROVE  CSpec <=> (Spec /\ []CRecentOK)
+  PROVE  CSpec <=> (Spec /\ []CRecentOK /\ []CSafeSentCanonical)
 <1>1. CSpec => Spec
   BY CRefinesAbstract
 <1>2. CSpec => []CJoint
@@ -33,8 +39,16 @@ THEOREM HPaxosPlusCalConcreteSpecEquivalence ==
   BY DEF CJoint, CInv, CRecentOK
 <1>4. CSpec => []CRecentOK
   BY <1>2, <1>3, PTL
-<1>5. (Spec /\ []CRecentOK) => CSpec
+<1>5. CSpec => []CSafeSentCanonical
+  <2>1. CSpec => [](\A m \in Msgs :
+                      Sig(m) \in SafeAcceptors => m.priors = Refs(m))
+    BY CSafeSentCanonicalHolds
+  <2>2. (\A m \in Msgs : Sig(m) \in SafeAcceptors => m.priors = Refs(m))
+          <=> CSafeSentCanonical
+    BY DEF CSafeSentCanonical
+  <2> QED BY <2>1, <2>2, PTL
+<1>6. (Spec /\ []CRecentOK /\ []CSafeSentCanonical) => CSpec
   BY CAbstractSimulated
 <1> QED
-  BY <1>1, <1>4, <1>5
+  BY <1>1, <1>4, <1>5, <1>6
 =============================================================================

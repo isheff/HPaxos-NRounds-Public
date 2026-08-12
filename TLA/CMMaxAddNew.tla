@@ -5,7 +5,7 @@
 \*
 \* This is the "x is genuinely new" branch of the recent_messages update.
 EXTENDS HPaxosPlusCalConcrete, CFields, CMessagesSubMC, CTranResolve,
-        CSelfInTran, CRefsIsMMax, TLAPS
+        CSelfInTran, CTranExclRec, TLAPS
 
 LEMMA CMMaxAddNew ==
   ASSUME ConcreteMessageInterface,
@@ -25,16 +25,17 @@ LEMMA CMMaxAddNew ==
     BY <2>1 DEF TranExclusive, CTranExcl
 <1>xsub. CTranExcl(x) \subseteq U
   BY <1>xtr
-\* x.priors is CRefs(x), the maximal antichain of x's own strict history.
-<1>xpri. x.priors = CMMax(CTranExcl(x))
-  <2>1. x \in CTran(x)
-    BY <1>xmc, CSelfInTran
-  <2>2. CWellFormed(x)
-    BY <1>msg, <2>1 DEF CMessages
-  <2>3. x.priors = CRefs(x)
-    BY <2>2 DEF CWellFormed, CFilterOut
-  <2> QED
-    BY <2>3, CRefsIsMMax
+\* x.priors need NOT be canonical (no CFilterOut clause pins it); what the
+\* argument needs is only that the priors sit inside the strict history and
+\* that the strict history decomposes over them (CTranExclRec).
+<1>xps. x.priors \subseteq CTranExcl(x)
+  <2>1. CPriors(x) \subseteq CTranExcl(x)
+    BY <1>xmc, CTranExclRec
+  <2> QED BY <2>1 DEF CPriors
+<1>xte. CTranExcl(x) = UNION {CTran(p) : p \in x.priors}
+  <2>1. CTranExcl(x) = UNION {CTran(p) : p \in CPriors(x)}
+    BY <1>xmc, CTranExclRec
+  <2> QED BY <2>1 DEF CPriors
 \* (i) x is maximal in U \cup {x}: anything above it would already contain it.
 <1>xmax. \A y \in U \cup {x} : x \notin CTranExcl(y)
   <2> SUFFICES ASSUME NEW y \in U \cup {x}, x \in CTranExcl(y)
@@ -56,21 +57,24 @@ LEMMA CMMaxAddNew ==
                PROVE  (z \in CTranExcl(x)) <=> (z \in x.priors)
     OBVIOUS
   <2>1. z \in x.priors => z \in CTranExcl(x)
-    BY <1>xpri DEF CMMax
+    BY <1>xps
   <2>2. z \in CTranExcl(x) => z \in x.priors
     <3> SUFFICES ASSUME z \in CTranExcl(x), z \notin x.priors
                  PROVE  FALSE
       OBVIOUS
-    \* z is below x but not maximally so, hence below some w in x's history --
-    \* and w lies in U, so z was never maximal in U.
-    <3>1. \E w \in CTranExcl(x) : z \in CTranExcl(w)
-      BY <1>xpri DEF CMMax
-    <3> PICK w \in CTranExcl(x) : z \in CTranExcl(w)
-      BY <3>1
-    <3>2. w \in U
-      BY <1>xsub
+    \* z is below x, hence inside some DIRECT prior's closure; not being that
+    \* prior itself, it sits strictly below it -- and the prior lies in U, so
+    \* z was never maximal in U.
+    <3>1. PICK p \in x.priors : z \in CTran(p)
+      BY <1>xte
+    <3>2. z # p
+      OBVIOUS
+    <3>3. z \in CTranExcl(p)
+      BY <3>1, <3>2 DEF CTranExcl
+    <3>4. p \in U
+      BY <3>1, <1>xps, <1>xsub
     <3> QED
-      BY <3>2 DEF CMMax
+      BY <3>3, <3>4 DEF CMMax
   <2> QED
     BY <2>1, <2>2
 <1> QED

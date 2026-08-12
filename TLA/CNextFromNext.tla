@@ -11,7 +11,7 @@ EXTENDS HPaxosPlusCalConcrete, CSafeGuardsIdentical, CAgreesFromJoint,
 
 LEMMA CNextFromNext ==
   ASSUME ConcreteMessageInterface, SafeAcceptorsAssumption,
-         CJoint, CRecentOK', [Next]_vars
+         CJoint, CRecentOK', CSafeSentCanonical', [Next]_vars
   PROVE  [CNext]_CVars
 <1>inv. CInv /\ KnownTranClosureInvT /\ SelfSentBoundedInvT /\ CRecentIsMax
   BY DEF CJoint
@@ -58,16 +58,35 @@ LEMMA CNextFromNext ==
       <4>cand. cand \in Messages /\ TranExclusive(cand) = Up /\ Sig(cand) = s
         BY <2>1, <2>g, <1>inv, <3>A, CCandFacts
       <4>msgs. Msgs' = Msgs \cup {cand}
-        <5>1. \E y \in (Messages \ Proposals) :
-                Sig(y) = s /\ TranExclusive(y) = CAT(s, x)
-          BY <3>A, <2>agree DEF CForcedSendAgreesAt
-        <5>2. cand = (CHOOSE y \in (Messages \ Proposals) :
-                        Sig(y) = s /\ TranExclusive(y) = CAT(s, x))
-          BY <3>A, <2>agree DEF CForcedSendAgreesAt
         <5>3. (known_messages'[s] \cup {x}) \cup {m \in Msgs : Sig(m) = s} = CAT(s, x)
           BY <2>kms DEF CAT, CSelfSent
+        <5>disj. \/ \E y \in {yy \in (Messages \ Proposals) :
+                                Sig(yy) = s /\ TranExclusive(yy) = CAT(s, x)} :
+                      Msgs' = Msgs \cup {y}
+                 \/ ({yy \in (Messages \ Proposals) :
+                        Sig(yy) = s /\ TranExclusive(yy) = CAT(s, x)} = {}
+                     /\ Msgs' = Msgs)
+          BY <2>1, <5>3 DEF safe_acceptor_receives_message
+        <5>ne. {yy \in (Messages \ Proposals) :
+                  Sig(yy) = s /\ TranExclusive(yy) = CAT(s, x)} # {}
+          <6>1. \E y \in (Messages \ Proposals) :
+                  Sig(y) = s /\ TranExclusive(y) = CAT(s, x)
+            BY <3>A, <2>agree DEF CForcedSendAgreesAt
+          <6> QED BY <6>1
+        <5>y. PICK y \in {yy \in (Messages \ Proposals) :
+                            Sig(yy) = s /\ TranExclusive(yy) = CAT(s, x)} :
+                Msgs' = Msgs \cup {y}
+          BY <5>disj, <5>ne
+        <5>yw. y \in (Messages \ Proposals) /\ Sig(y) = s
+                 /\ TranExclusive(y) = CAT(s, x)
+          BY <5>y
+        <5>can. y.priors = Refs(y)
+          <6>1. y \in Msgs'  BY <5>y
+          <6> QED BY <6>1, <5>yw, <2>1 DEF CSafeSentCanonical
+        <5>eq. y = CCand(s, x)
+          BY <5>yw, <5>can, <2>agree DEF CForcedSendAgreesAt
         <5> QED
-          BY <2>1, <5>1, <5>2, <5>3 DEF safe_acceptor_receives_message
+          BY <5>y, <5>eq
       <4>self. \A t \in SafeAcceptors :
                  {m \in Msgs' : Sig(m) = t}
                    = IF t = s THEN CSelfSent(s) \cup {cand} ELSE CSelfSent(t)
@@ -131,7 +150,7 @@ LEMMA CNextFromNext ==
     <3>1. known_messages \in [SafeAcceptors -> SUBSET Messages]
       BY <1>inv DEF CInv
     <3> QED
-      BY <2>1, <2>agree, <2>upd, <3>1, CSafeStepEquiv
+      BY <2>1, <2>agree, <2>upd, <3>1, CSafeSentCanonical', CSafeStepEquiv
   <2> QED
     BY <2>1, <2>2 DEF CNext
 <1>2. CASE \E self \in ByzSenders : byz(self)

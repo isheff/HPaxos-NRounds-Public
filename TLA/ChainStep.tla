@@ -19,33 +19,40 @@ LEMMA ChainStep ==
   <2>2. /\ x \in Msgs
         /\ TranExclusive(x) \subseteq known_messages[self]
         /\ known_messages' = [known_messages EXCEPT ![self] = known_messages[self] \cup {x}]
-        /\ Msgs' = (LET T == (known_messages'[self] \cup {x})
-                                  \cup {m \in Msgs : Sig(m) = self} IN
-                       IF \E y \in (Messages \ Proposals) : Sig(y) = self /\ TranExclusive(y) = T
-                         THEN Msgs \cup {CHOOSE y \in (Messages \ Proposals) :
-                                             Sig(y) = self /\ TranExclusive(y) = T}
-                         ELSE Msgs)
+        /\ LET T == (known_messages'[self] \cup {x})
+                    \cup {m \in Msgs : Sig(m) = self}
+               W == {y \in (Messages \ Proposals) :
+                       Sig(y) = self /\ TranExclusive(y) = T}
+           IN \/ \E y \in W : Msgs' = Msgs \cup {y}
+              \/ (W = {} /\ Msgs' = Msgs)
      BY <2>1 DEF safe_acceptor_receives_message
   <2>1a. self \in SafeAcceptors  BY <2>1
   <2>x. x \in Msgs /\ TranExclusive(x) \subseteq known_messages[self]  BY <2>2
   <2>k. known_messages' = [known_messages EXCEPT ![self] = known_messages[self] \cup {x}]  BY <2>2
   <2>kself. known_messages'[self] = known_messages[self] \cup {x}  BY <2>k, <1>i, <2>1a
   <2> DEFINE T == (known_messages'[self] \cup {x}) \cup {m \in Msgs : Sig(m) = self}
-  <2>net. Msgs' = (IF \E y \in (Messages \ Proposals) : Sig(y) = self /\ TranExclusive(y) = T
-                        THEN Msgs \cup {CHOOSE y \in (Messages \ Proposals) :
-                                            Sig(y) = self /\ TranExclusive(y) = T}
-                        ELSE Msgs)
-     BY <2>2
   <2>ndisj. \/ Msgs' = Msgs
             \/ \E y \in (Messages \ Proposals) : Sig(y) = self /\ TranExclusive(y) = T /\ Msgs' = Msgs \cup {y}
-    <3>1. CASE \E y \in (Messages \ Proposals) : Sig(y) = self /\ TranExclusive(y) = T
-      <4> DEFINE y0 == CHOOSE y \in (Messages \ Proposals) : Sig(y) = self /\ TranExclusive(y) = T
-      <4>1. y0 \in (Messages \ Proposals) /\ Sig(y0) = self /\ TranExclusive(y0) = T  BY <3>1
-      <4>2. Msgs' = Msgs \cup {y0}  BY <2>net, <3>1
-      <4> QED  BY <4>1, <4>2
-    <3>2. CASE ~(\E y \in (Messages \ Proposals) : Sig(y) = self /\ TranExclusive(y) = T)
-      BY <2>net, <3>2
-    <3> QED  BY <3>1, <3>2
+    <3>w. \/ \E y \in {yy \in (Messages \ Proposals) :
+                         Sig(yy) = self /\ TranExclusive(yy) = T} :
+               Msgs' = Msgs \cup {y}
+          \/ ({yy \in (Messages \ Proposals) :
+                 Sig(yy) = self /\ TranExclusive(yy) = T} = {}
+              /\ Msgs' = Msgs)
+      BY <2>2
+    <3>1. CASE \E y \in {yy \in (Messages \ Proposals) :
+                           Sig(yy) = self /\ TranExclusive(yy) = T} :
+                 Msgs' = Msgs \cup {y}
+      <4>1. PICK y \in {yy \in (Messages \ Proposals) :
+                          Sig(yy) = self /\ TranExclusive(yy) = T} :
+              Msgs' = Msgs \cup {y}
+        BY <3>1
+      <4> QED  BY <4>1
+    <3>2. CASE ~(\E y \in {yy \in (Messages \ Proposals) :
+                             Sig(yy) = self /\ TranExclusive(yy) = T} :
+                   Msgs' = Msgs \cup {y})
+      BY <3>w, <3>2
+    <3> QED  BY <3>w, <3>1, <3>2
   <2>a. CASE Msgs' = Msgs
     BY <2>a DEF SafeAcceptorChainInv
   <2>b. CASE \E y \in (Messages \ Proposals) : Sig(y) = self /\ TranExclusive(y) = T /\ Msgs' = Msgs \cup {y}

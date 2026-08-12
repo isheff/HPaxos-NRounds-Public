@@ -1,14 +1,16 @@
 --------------------------- MODULE WellFormedRecDef ---------------------------
-\* Definitions only; the equivalence lemma is CWellFormedRec.
+\* Definitions only; the equivalence theorem is CWellFormedRec.
 \*
 \* WellFormedRec: the digest-based well-formedness check an acceptor runs
 \* on a RECEIVED CANDIDATE record cand = [sender, payload, priors], given
-\* only the DIGESTS of its priors (all already-accepted messages). Except
-\* for the final antichain conjunct -- which touches Tran only of the
-\* priors themselves, and is provably not decidable from bounded digests
-\* when a prior's signer has equivocated -- every conjunct reads the
-\* priors' digests alone, so checking cost scales with
-\* |priors| x |Learners/signers|, never with |Tran|.
+\* only the DIGESTS of its priors (all already-accepted messages). Every
+\* conjunct reads the priors' digests alone -- no use of Tran or CTran
+\* anywhere -- so checking cost scales with |priors| x |Learners/signers|,
+\* never with |Tran|.  (Priors-canonicality, m.priors = CRefs(m), is NOT
+\* checked: it is provably not decidable from bounded digests when a
+\* prior's signer has equivocated.  It is not part of CWellFormed either;
+\* it holds for safe acceptors' own sends as an algorithm invariant --
+\* CSafeSentCanonical.)
 \*
 \* The WFR* operators are the candidate-record variants of the digest
 \* assembly operators: identical bodies with the interface macros on the
@@ -92,10 +94,7 @@ WFRIsTwoA(sdr, pl, r) == pl \notin CProposal /\ WFRLrns(sdr, pl, r) # {}
 \*      priors' digests (the candidate can never be half of a fork with
 \*      its own ancestor);
 \*   3. proposal / OneB / TwoA, via the digest characterizations;
-\*   4. a proposal's ballot field is its B (CFilterOut's first clause);
-\*   5. the priors are exactly the refs: equivalently, they form an
-\*      antichain (the one conjunct not decidable from digests when a
-\*      prior's signer equivocated).
+\*   4. a proposal's ballot field is its B (CFilterOut's clause).
 WellFormedRec(cand) ==
   LET r == {Digest(p) : p \in cand.priors}
   IN  /\ CIsProposal(cand) \/ cand.priors # {}
@@ -104,6 +103,4 @@ WellFormedRec(cand) ==
          \/ WFRIsOneB(cand.payload, r)
          \/ WFRIsTwoA(cand.sender, cand.payload, r)
       /\ CIsProposal(cand) => WFRBal(cand.payload, r) = cand.payload.ballot
-      /\ \A p \in cand.priors : \A q \in cand.priors :
-           p = q \/ p \notin CTran(q)
 ====================================================================

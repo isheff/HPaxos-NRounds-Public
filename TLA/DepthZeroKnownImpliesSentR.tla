@@ -76,12 +76,12 @@ LEMMA DepthZeroKnownImpliesSentR ==
       <4>eff. /\ self2 \in Msgs
               /\ TranExclusive(self2) \subseteq known_messages[self1]
               /\ known_messages' = [known_messages EXCEPT ![self1] = known_messages[self1] \cup {self2}]
-              /\ Msgs' = (LET T == (known_messages'[self1] \cup {self2})
-                                      \cup {mm \in Msgs : Sig(mm) = self1} IN
-                             IF \E y \in (Messages \ Proposals) : Sig(y) = self1 /\ TranExclusive(y) = T
-                               THEN Msgs \cup {CHOOSE y \in (Messages \ Proposals) :
-                                                    Sig(y) = self1 /\ TranExclusive(y) = T}
-                               ELSE Msgs)
+              /\ LET T == (known_messages'[self1] \cup {self2})
+                          \cup {mm \in Msgs : Sig(mm) = self1}
+                     W == {y \in (Messages \ Proposals) :
+                             Sig(y) = self1 /\ TranExclusive(y) = T}
+                 IN \/ \E y \in W : Msgs' = Msgs \cup {y}
+                    \/ (W = {} /\ Msgs' = Msgs)
         BY DEF safe_acceptor_receives_message
       <4>self1a. self1 \in SafeAcceptors  OBVIOUS
       <4>selfcase. CASE self1 = a /\ self2 = p
@@ -254,18 +254,15 @@ LEMMA DepthZeroKnownImpliesSentR ==
             BY <6>Teq
           <6>Mnonempty. \E yy \in (Messages \ Proposals) : Sig(yy) = a /\ TranExclusive(yy) = T
             BY <6>yinM
-          <6>netp. Msgs' = Msgs \cup {CHOOSE yy \in (Messages \ Proposals) :
-                                               Sig(yy) = a /\ TranExclusive(yy) = T}
+          <6>wpick. PICK ysent \in {yy \in (Messages \ Proposals) :
+                                      Sig(yy) = a /\ TranExclusive(yy) = T} :
+                      Msgs' = Msgs \cup {ysent}
             BY <4>eff, <4>selfcase, <6>Mnonempty
-          <6> DEFINE ychosen == CHOOSE yy \in (Messages \ Proposals) : Sig(yy) = a /\ TranExclusive(yy) = T
-          <6>ycin. ychosen \in (Messages \ Proposals) /\ Sig(ychosen) = a /\ TranExclusive(ychosen) = T
-            BY <6>Mnonempty
-          <6>ycnet. ychosen \in Msgs'  BY <6>netp
           <6>ycex. \E yc \in (Messages \ Proposals) :
                      /\ Sig(yc) = a
                      /\ TranExclusive(yc) = TranClosure(known \cup {p})
                      /\ yc \in Msgs'
-            BY <6>ycin, <6>Teq, <6>ycnet
+            BY <6>wpick, <6>Teq
           <6> PICK yc \in (Messages \ Proposals) :
                 /\ Sig(yc) = a
                 /\ TranExclusive(yc) = TranClosure(known \cup {p})
