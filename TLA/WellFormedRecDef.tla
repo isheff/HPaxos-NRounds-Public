@@ -1,0 +1,109 @@
+--------------------------- MODULE WellFormedRecDef ---------------------------
+\* Definitions only; the equivalence lemma is CWellFormedRec.
+\*
+\* WellFormedRec: the digest-based well-formedness check an acceptor runs
+\* on a RECEIVED CANDIDATE record cand = [sender, payload, priors], given
+\* only the DIGESTS of its priors (all already-accepted messages). Except
+\* for the final antichain conjunct -- which touches Tran only of the
+\* priors themselves, and is provably not decidable from bounded digests
+\* when a prior's signer has equivocated -- every conjunct reads the
+\* priors' digests alone, so checking cost scales with
+\* |priors| x |Learners/signers|, never with |Tran|.
+\*
+\* The WFR* operators are the candidate-record variants of the digest
+\* assembly operators: identical bodies with the interface macros on the
+\* (possibly not-yet-well-formed) candidate replaced by its record fields
+\* (sender for Sig, payload \in CProposal for IsProposal, payload.ballot
+\* for ProposalBal). CaughtAssemble needs no variant: it never looks at
+\* the assembling message itself.
+EXTENDS MessageConcrete, RecursiveWellFormed
+
+\* Ballot of the candidate: max of priors' ballots plus its own proposal
+\* ballot (mirrors BalAssemble).
+WFRBal(pl, r) ==
+  Max({rc.bal : rc \in r}
+      \cup (IF pl \in CProposal THEN {pl.ballot} ELSE {}))
+
+\* Mirrors NewBalAssemble.
+WFRNewBal(pl, r) == \A rc \in r : rc.bal < WFRBal(pl, r)
+
+\* Mirrors IsOneBAssemble: a same-ballot proposal prior with newbal, all
+\* other priors strictly lower.
+WFRIsOneB(pl, r) ==
+  /\ pl \notin CProposal
+  /\ \E rc \in r :
+       /\ CIsProposal(rc.id)
+       /\ rc.bal = WFRBal(pl, r)
+       /\ rc.newbal
+       /\ \A rc2 \in r : rc2 = rc \/ rc2.bal < WFRBal(pl, r)
+
+\* Mirrors SBRefs/QDepthCands/QDom/RefFrontier/RefPending/Bump for the
+\* candidate's ballot.
+WFRSBRefs(pl, r) == {rc \in r : rc.bal = WFRBal(pl, r)}
+
+WFRQDepthCands(alpha, pl, r) ==
+  {QDepthCand(alpha, rc) :
+     rc \in {y \in WFRSBRefs(pl, r) : alpha \in DOMAIN y.maxqdepth}}
+
+WFRQDom(pl, r) == {alpha \in Learners :
+                     \E rc \in WFRSBRefs(pl, r) : alpha \in DOMAIN rc.maxqdepth}
+
+WFRRefFrontier(alpha, pl, r) == Max(WFRQDepthCands(alpha, pl, r))
+
+WFRRefPending(alpha, pl, r) ==
+  UNION {RefPendingPart(alpha, rc) :
+           rc \in {y \in WFRSBRefs(pl, r) :
+                     /\ alpha \in DOMAIN y.maxqdepth
+                     /\ y.maxqdepth[alpha] = WFRRefFrontier(alpha, pl, r)}}
+
+WFRBump(alpha, sdr, pl, r) ==
+  /\ sdr \in Acceptors
+  /\ CSigS(WFRRefPending(alpha, pl, r)) \in Quorums(alpha)
+
+\* Mirrors FreshAssemble, against the candidate's ballot.
+WFRFresh(alpha, pl, r) ==
+  \A l \in ConFromCaught(alpha, CaughtAssemble(r))
+             \cap DOMAIN HighestTwoAsAssemble(r) :
+    \/ BalToVal(HighestTwoAsAssemble(r)[l].bal) = BalToVal(WFRBal(pl, r))
+    \/ \E l2 \in ConFromCaught(alpha, CaughtAssemble(r))
+                   \cap DOMAIN HighestTwoAsAssemble(r) :
+         HighestTwoAsAssemble(r)[l2].bal > HighestTwoAsAssemble(r)[l].bal
+
+\* Mirrors LrnsAssemble: the learners the CANDIDATE itself would attest
+\* depth 1 for. (Frontier >= 1: inherited quorum needs only acceptor-
+\* signedness; frontier 0: the pending level-0 attesters must form a
+\* quorum -- but a OneB candidate is itself only a LEVEL-0 attester, so
+\* depth 1 of the candidate needs the quorum among its PRIORS' history.)
+WFRLrns(sdr, pl, r) ==
+  {alpha \in WFRQDom(pl, r) :
+     IF WFRRefFrontier(alpha, pl, r) >= 1
+       THEN sdr \in Acceptors
+       ELSE WFRBump(alpha, sdr, pl, r)}
+
+\* Mirrors IsTwoADigest's characterization.
+WFRIsTwoA(sdr, pl, r) == pl \notin CProposal /\ WFRLrns(sdr, pl, r) # {}
+
+\* The digest-based candidate check, equivalent (CWellFormedRec, under
+\* MessageInterface = CMI with priors \subseteq CMessages) to
+\* CWellFormed(cand):
+\*   1. a proposal exists in the closure: the candidate is one, or it has
+\*      a prior (every well-formed prior carries one, by AlwaysAProposal);
+\*   2. an acceptor may not catch itself: caught is assembled from the
+\*      priors' digests (the candidate can never be half of a fork with
+\*      its own ancestor);
+\*   3. proposal / OneB / TwoA, via the digest characterizations;
+\*   4. a proposal's ballot field is its B (CFilterOut's first clause);
+\*   5. the priors are exactly the refs: equivalently, they form an
+\*      antichain (the one conjunct not decidable from digests when a
+\*      prior's signer equivocated).
+WellFormedRec(cand) ==
+  LET r == {Digest(p) : p \in cand.priors}
+  IN  /\ CIsProposal(cand) \/ cand.priors # {}
+      /\ cand.sender \in Acceptors => cand.sender \notin CaughtAssemble(r)
+      /\ \/ CIsProposal(cand)
+         \/ WFRIsOneB(cand.payload, r)
+         \/ WFRIsTwoA(cand.sender, cand.payload, r)
+      /\ CIsProposal(cand) => WFRBal(cand.payload, r) = cand.payload.ballot
+      /\ \A p \in cand.priors : \A q \in cand.priors :
+           p = q \/ p \notin CTran(q)
+====================================================================
