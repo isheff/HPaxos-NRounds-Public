@@ -1,15 +1,21 @@
 ----------------------------- MODULE CWellFormedRec -----------------------------
 \* THE candidate-checking theorem: the memo-based WellFormedRec check an
-\* acceptor runs on a received candidate record -- reading ONLY the memos
-\* of its priors, never Tran -- is EQUIVALENT to CWellFormed of the record.
+\* acceptor runs on a received candidate record -- reading ONLY the stored
+\* MemoP records of its priors, never Tran -- is EQUIVALENT to CWellFormed
+\* of the record.
 \* Conjunct by conjunct: (1) a proposal exists in the closure iff the
 \* candidate is one or has a prior (CBAchievedByProposal at a prior); (2) the
-\* assembled caught set IS CCaught(cand) (CaughtCand); (3) proposal/OneB/TwoA
-\* via IsOneBU and LrnsU; (4) the assembled ballot IS CB(cand) (BalU).
+\* assembled caught set IS CCaught(cand) (MemoPCaughtCand); (3)
+\* proposal/OneB/TwoA via IsOneBU and LrnsU; (4) the assembled ballot IS
+\* CB(cand) (BalU).  The three canonical-memo lemmas speak about the
+\* assemblies over {Memo(p) : p \in priors}; WFRAgree carries each of them
+\* across to the stored {MemoP(p) : p \in priors}, which the check actually
+\* reads (the caught conjunct cannot go that way -- the two memos may
+\* CHOOSE different deepestknown entries -- so it is proven directly).
 \* Priors-canonicality is deliberately absent on both sides: it is not
 \* memo-decidable, so CWellFormed does not demand it; safe acceptors
 \* maintain it as an algorithm invariant instead (CSafeSentCanonical).
-EXTENDS WellFormedRecDef, BalU, IsOneBU, LrnsU, CaughtCand,
+EXTENDS WellFormedRecDef, BalU, IsOneBU, LrnsU, MemoPCaughtCand, WFRAgree,
         CBAchievedByProposal
 LOCAL INSTANCE TLAPS
 
@@ -27,8 +33,14 @@ THEOREM CWellFormedRec ==
 <1>ta. TranAcyclic  BY DEF MessageInterfaceAssumptions
 <1>anp. AlwaysAProposal  BY DEF MessageInterfaceAssumptions
 <1> DEFINE cand == [sender |-> sdr, payload |-> pl, priors |-> pr]
-<1> DEFINE r    == {Memo(p) : p \in pr}
+<1> DEFINE r    == {MemoP(p) : p \in pr}
+<1> DEFINE rC   == {Memo(p) : p \in pr}
 <1> DEFINE U    == UNION {CTran(p) : p \in pr}
+<1>agree. /\ WFRBal(pl, r) = WFRBal(pl, rC)
+          /\ (WFRIsOneB(pl, r) <=> WFRIsOneB(pl, rC))
+          /\ WFRLrns(sdr, pl, r) = WFRLrns(sdr, pl, rC)
+          /\ (WFRIsTwoA(sdr, pl, r) <=> WFRIsTwoA(sdr, pl, rC))
+  BY WFRAgree
 <1>tr. CTran(cand) = {cand} \cup U /\ CTranExcl(cand) = U
   BY CBuiltTran
 <1>flds. cand.sender = sdr /\ cand.payload = pl /\ cand.priors = pr
@@ -50,7 +62,7 @@ THEOREM CWellFormedRec ==
 <1>c2eq. (sdr \in Acceptors => sdr \notin CaughtAssemble(r))
            <=> (CSig(cand) \in Acceptors => CSig(cand) \notin CCaught(cand))
   <2>1. CaughtAssemble(r) = CCaught(cand)
-    BY <1>tok, <1>tt, <1>tf, <1>ta, CaughtCand
+    BY MemoPCaughtCand
   <2> QED BY <2>1, <1>csig
 <1>c1eq. (\E a \in CTran(cand) : CIsProposal(a))
            <=> (CIsProposal(cand) \/ pr # {})
@@ -94,13 +106,20 @@ THEOREM CWellFormedRec ==
   <2> QED BY <2>w, <2>c
 <1>caseB. CASE pl \in CProposal \/ pr # {}
   <2>bal. CB(cand) = WFRBal(pl, r)
-    BY <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, <1>caseB, BalU
+    <3>1. CB(cand) = WFRBal(pl, rC)
+      BY <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, <1>caseB, BalU
+    <3> QED BY <3>1, <1>agree
   <2>oneb. CIsOneB(cand) <=> WFRIsOneB(pl, r)
-    BY <1>caseB, IsOneBU
+    <3>1. CIsOneB(cand) <=> WFRIsOneB(pl, rC)  BY <1>caseB, IsOneBU
+    <3> QED BY <3>1, <1>agree
   <2>lrns. /\ WFRLrns(sdr, pl, r) \subseteq Learners
            /\ \A alpha \in Learners :
                 CHasDepth(alpha, cand, 1) <=> alpha \in WFRLrns(sdr, pl, r)
-    BY <1>caseB, LrnsU
+    <3>1. /\ WFRLrns(sdr, pl, rC) \subseteq Learners
+          /\ \A alpha \in Learners :
+               CHasDepth(alpha, cand, 1) <=> alpha \in WFRLrns(sdr, pl, rC)
+      BY <1>caseB, LrnsU
+    <3> QED BY <3>1, <1>agree
   <2>twoa. CIsTwoA(cand) <=> WFRIsTwoA(sdr, pl, r)
     <3>1. CIsTwoA(cand)
             <=> (~CIsProposal(cand)

@@ -3,7 +3,8 @@
 \*
 \* WellFormedRec: the memo-based well-formedness check an acceptor runs
 \* on a RECEIVED CANDIDATE record cand = [sender, payload, priors], given
-\* only the DIGESTS of its priors (all already-accepted messages). Every
+\* only the MemoP records of its priors -- the priors-recursive memos an
+\* implementation actually stores, since it never computes Refs. Every
 \* conjunct reads the priors' memos alone -- no use of Tran or CTran
 \* anywhere -- so checking cost scales with |priors| x |Learners/signers|,
 \* never with |Tran|.  (Priors-canonicality, m.priors = CRefs(m), is NOT
@@ -105,7 +106,7 @@ WFRIsTwoA(sdr, pl, r) == pl \notin CProposal /\ WFRLrns(sdr, pl, r) # {}
 \*   3. proposal / OneB / TwoA, via the memo characterizations;
 \*   4. a proposal's ballot field is its B (CFilterOut's clause).
 WellFormedRec(cand) ==
-  LET r == {Memo(p) : p \in cand.priors}
+  LET r == {MemoP(p) : p \in cand.priors}
   IN  /\ CIsProposal(cand) \/ cand.priors # {}
       /\ cand.sender \in Acceptors => cand.sender \notin CaughtAssemble(r)
       /\ \/ CIsProposal(cand)
