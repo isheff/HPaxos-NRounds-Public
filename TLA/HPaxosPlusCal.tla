@@ -111,7 +111,7 @@ ByzSenders == Senders \ SafeAcceptors
      }
    }
 *)
-\* BEGIN TRANSLATION (chksum(pcal) = "8b56d45f" /\ chksum(tla) = "60af8b88")
+\* BEGIN TRANSLATION (chksum(pcal) = "986ee6e0" /\ chksum(tla) = "e530e0fb")
 VARIABLES Msgs, known_messages
 
 vars == << Msgs, known_messages >>
@@ -125,12 +125,17 @@ Init == (* Global variables *)
 safe_acceptor_receives_message(self) == /\ self[2] \in Msgs
                                         /\ TranExclusive(self[2]) \subseteq known_messages[self[1]]
                                         /\ known_messages' = [known_messages EXCEPT ![self[1]] = known_messages[self[1]] \cup {self[2]}]
-                                        /\ LET T == (known_messages'[self[1]] \cup {self[2]})
-                                                    \cup {m \in Msgs : Sig(m) = self[1]}
-                                               W == {y \in (Messages \ Proposals) :
-                                                       Sig(y) = self[1] /\ TranExclusive(y) = T}
-                                           IN \/ \E y \in W : Msgs' = Msgs \cup {y}
-                                              \/ (W = {} /\ Msgs' = Msgs)
+                                        /\ \/ /\ \E y \in LET T == (known_messages'[self[1]] \cup {self[2]})
+                                                                   \cup {m \in Msgs : Sig(m) = self[1]}
+                                                          IN {z \in (Messages \ Proposals) :
+                                                                Sig(z) = self[1] /\ TranExclusive(z) = T}:
+                                                   Msgs' = (Msgs \cup {y})
+                                           \/ /\ LET T == (known_messages'[self[1]] \cup {self[2]})
+                                                          \cup {m \in Msgs : Sig(m) = self[1]}
+                                                 IN ~\E z \in (Messages \ Proposals) :
+                                                       Sig(z) = self[1] /\ TranExclusive(z) = T
+                                              /\ TRUE
+                                              /\ Msgs' = Msgs
 
 byz(self) == /\ \E y \in {z \in Messages : Sig(z) = self /\ TranExclusive(z) \subseteq Msgs}:
                   Msgs' = (Msgs \cup {y})
