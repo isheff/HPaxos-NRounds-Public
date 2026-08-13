@@ -1,11 +1,10 @@
 ---------------------------- MODULE MemoPCaughtCand ----------------------------
 \* Concrete reading of MemoPCaughtU at the built candidate: the caught
-\* assembly over the priors' MemoP records IS CCaught(cand).  Same collapse
-\* as CaughtCand: the candidate itself never contributes a witness pair --
-\* everything in the closure is in CTran(cand), so a pair involving cand
-\* fails the incomparability test -- hence CCaughtS over {cand} \cup U
-\* collapses to CCaughtS(U), which resolves to the interface-side CaughtS(U)
-\* that MemoPCaughtU computes.
+\* assembly over the priors' MemoP records IS CCaught(cand).  The candidate
+\* itself never contributes a witness pair -- everything in the closure is in
+\* CTran(cand), so a pair involving cand fails the incomparability test --
+\* hence CCaughtS over {cand} \cup U collapses to CCaughtS(U), which resolves
+\* to the interface-side CaughtS(U) that MemoPCaughtU computes.
 EXTENDS MemoPCaughtU, CBuiltTran, CUnionTranFiniteClosed, CCaughtSResolve,
         CTranResolve, CFields
 LOCAL INSTANCE TLAPS

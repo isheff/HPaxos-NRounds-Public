@@ -4,8 +4,9 @@
 \* over the priors' MemoP records is P-correct for UU := UNION {Tran(p) :
 \* p \in pr}, the exclusive closure the candidate WOULD have (CBuiltTran).
 \*
-\* Adapted from MemoPDKStep exactly as DeepestKnownU is adapted from
-\* DeepestKnownStep: x entered only through TranExclusive(x) (replaced by UU
+\* Adapted from MemoPDKStep by the same (pr, U)-virtualization that carries
+\* DeepestKnownStep to a prior set: x entered only through TranExclusive(x)
+\* (replaced by UU
 \* wholesale) and through Tran(x)'s finiteness (pr finite is now a
 \* hypothesis).  Member facts come from MemoPGoodInv, since the priors are
 \* real messages; the depth bridge to the canonical DeepestKnown is the

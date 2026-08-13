@@ -4,8 +4,8 @@
 \* CaughtS(UU) for UU := UNION {Tran(p) : p \in pr} -- the closure a
 \* candidate with those priors would have.
 \*
-\* This is CaughtU with the canonical memos replaced by MemoP records: the
-\* chain test reads the P-chains, and every chain property it needs comes
+\* This is CaughtStep virtualized to (pr, UU) AND read over MemoP records:
+\* the chain test reads the P-chains, and every chain property it needs comes
 \* from MemoPGoodInv (the priors, and everything in UU, are real messages),
 \* with MemoPDKU for the assembled deepestknown map and MemoPDKMaximalU for
 \* the "strictly above the entry" case.

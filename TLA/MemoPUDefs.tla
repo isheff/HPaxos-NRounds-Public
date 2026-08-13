@@ -1,6 +1,7 @@
 ------------------------------ MODULE MemoPUDefs ------------------------------
 \* Definitions only: the P-side, U-parameterized correctness predicate.
-\* DeepestKnownCorrectUP is DeepestKnownCorrectU with MemoP-canonical
+\* DeepestKnownCorrectUP is DeepestKnownCorrect with TranExclusive(m)
+\* replaced by an arbitrary closure UU and with MemoP-canonical
 \* entries -- what the deepestknown assembly over a prior set's MemoP
 \* records satisfies for the closure UU those priors span (which, by
 \* CBuiltTran, IS the candidate's exclusive closure).  Depths stay the
