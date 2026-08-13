@@ -1,4 +1,11 @@
 ------------------------------- MODULE CaughtCand -------------------------------
+\* NOTE: no longer cited by CWellFormedRec, which reads the STORED memos and
+\* so goes through MemoPCaughtCand instead.  Retained deliberately: this is
+\* the canonical-memo twin of that lemma (same collapse argument), and it is
+\* the only statement that the assembly over {Memo(p) : p \in priors} also
+\* equals CCaught(cand) -- the fact any future comparison of the two check
+\* formulations would need.
+\*
 \* Concrete reading of CaughtU at the built candidate: the caught assembly
 \* over the priors' memos IS CCaught(cand).  The candidate itself never
 \* contributes a witness pair -- everything in the closure is in CTran(cand),

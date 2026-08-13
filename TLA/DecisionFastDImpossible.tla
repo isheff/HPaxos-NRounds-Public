@@ -1,4 +1,7 @@
 ----------------------------- MODULE DecisionFastDImpossible -----------------------------
+\* CONJECTURE, STATED WITHOUT PROOF.  The theorem below has no proof body, so
+\* tlapm generates ZERO obligations for this module: a sweep reports it as
+\* "All 0 obligation proved" and it is easy to mistake for a proven result.
 EXTENDS MessageInterface
 LOCAL INSTANCE TLAPS
 
