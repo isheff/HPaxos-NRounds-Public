@@ -1,5 +1,5 @@
 --------------------------------- MODULE LrnsU ---------------------------------
-\* Plan step (e) toward CWellFormedRec: the digest-based WFRLrns check on the
+\* Plan step (e) toward CWellFormedRec: the memo-based WFRLrns check on the
 \* candidate's priors decides the candidate's own depth-1 attestations.
 \* Adapted from LrnsStep with x := cand and TranExclusive(x) := U (the union
 \* of the priors' closures, = CTranExcl(cand) by CBuiltTran).  The members of
@@ -12,7 +12,7 @@
 \* attester set (Bump).  No frontier: no attesters, and quorums are never
 \* empty.
 EXTENDS WellFormedRecDef, BalU, CBuiltInCMC, CQdCompute, CHasDepthResolve,
-        CSigSResolve, MaxQDepthInv, DigestRec, HasDepthDef, HasDepthDownward,
+        CSigSResolve, MaxQDepthInv, MemoRec, HasDepthDef, HasDepthDownward,
         QuorumUpward, QuorumsHaveMembers, TranSubMessages, BBallot
 LOCAL INSTANCE TLAPS
 
@@ -24,7 +24,7 @@ LEMMA LrnsU ==
          NEW pr, pr \subseteq CMessages, IsFiniteSet(pr),
          pl \in CProposal \/ pr # {}
   PROVE LET cand == [sender |-> sdr, payload |-> pl, priors |-> pr]
-            r    == {Digest(p) : p \in pr}
+            r    == {Memo(p) : p \in pr}
         IN  /\ WFRLrns(sdr, pl, r) \subseteq Learners
             /\ \A alpha \in Learners :
                  CHasDepth(alpha, cand, 1) <=> alpha \in WFRLrns(sdr, pl, r)
@@ -34,7 +34,7 @@ LEMMA LrnsU ==
 <1>ta. TranAcyclic  BY DEF MessageInterfaceAssumptions
 <1>anp. AlwaysAProposal  BY DEF MessageInterfaceAssumptions
 <1> DEFINE cand == [sender |-> sdr, payload |-> pl, priors |-> pr]
-<1> DEFINE r    == {Digest(p) : p \in pr}
+<1> DEFINE r    == {Memo(p) : p \in pr}
 <1> DEFINE U    == UNION {Tran(p) : p \in pr}
 <1>msub. pr \subseteq Messages  BY CFields
 <1>ueqp. \A p \in pr : Tran(p) = CTran(p)  BY CTranResolve
@@ -86,34 +86,34 @@ LEMMA LrnsU ==
   <2>1. y \in Messages  BY <1>uM
   <2>2. B(y) \in Ballots  BY <2>1, <1>tok, <1>tf, <1>anp, BBallot
   <2> QED BY <2>2 DEF Ballots
-<1>idp. \A p \in pr : /\ Digest(p).id = p
-                      /\ Digest(p).bal = B(p)
-                      /\ Digest(p).maxqdepth = DigestMaxQDepth(p)
-                      /\ Digest(p).pendingqd = DigestPendingQd(p)
+<1>idp. \A p \in pr : /\ Memo(p).id = p
+                      /\ Memo(p).bal = B(p)
+                      /\ Memo(p).maxqdepth = MemoMaxQDepth(p)
+                      /\ Memo(p).pendingqd = MemoPendingQd(p)
   <2> SUFFICES ASSUME NEW p \in pr
-      PROVE /\ Digest(p).id = p
-            /\ Digest(p).bal = B(p)
-            /\ Digest(p).maxqdepth = DigestMaxQDepth(p)
-            /\ Digest(p).pendingqd = DigestPendingQd(p)
+      PROVE /\ Memo(p).id = p
+            /\ Memo(p).bal = B(p)
+            /\ Memo(p).maxqdepth = MemoMaxQDepth(p)
+            /\ Memo(p).pendingqd = MemoPendingQd(p)
     OBVIOUS
   <2>1. p \in Messages  BY <1>msub
-  <2>2. Digest(p) = DigestR(p, {Digest(q) : q \in Refs(p)})
-    BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, DigestRec
-  <2>3. DigestBal(p) = B(p)
+  <2>2. Memo(p) = MemoR(p, {Memo(q) : q \in Refs(p)})
+    BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, MemoRec
+  <2>3. MemoBal(p) = B(p)
     BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, BalRec
   <2> QED BY <2>2, <2>3
-    DEF DigestR, DigestBal, DigestMaxQDepth, DigestPendingQd
+    DEF MemoR, MemoBal, MemoMaxQDepth, MemoPendingQd
 <1>ihmq. \A p \in pr : MaxQDepthInvariant(p)
   BY <1>msub, MaxQDepthInv
-<1>sbref. \A p \in pr : (Digest(p) \in WFRSBRefs(pl, r)) <=> (B(p) = CB(cand))
+<1>sbref. \A p \in pr : (Memo(p) \in WFRSBRefs(pl, r)) <=> (B(p) = CB(cand))
   BY <1>idp, <1>bal DEF WFRSBRefs
 <1>sbpick. \A rc \in WFRSBRefs(pl, r) :
-             \E p \in pr : rc = Digest(p) /\ B(p) = CB(cand)
+             \E p \in pr : rc = Memo(p) /\ B(p) = CB(cand)
   <2> SUFFICES ASSUME NEW rc \in WFRSBRefs(pl, r)
-      PROVE \E p \in pr : rc = Digest(p) /\ B(p) = CB(cand)
+      PROVE \E p \in pr : rc = Memo(p) /\ B(p) = CB(cand)
     OBVIOUS
   <2>1. rc \in r /\ rc.bal = WFRBal(pl, r)  BY DEF WFRSBRefs
-  <2>2. PICK p \in pr : rc = Digest(p)  BY <2>1
+  <2>2. PICK p \in pr : rc = Memo(p)  BY <2>1
   <2> QED BY <2>1, <2>2, <1>idp, <1>bal
 <1>same. \A y \in U :
            B(y) = CB(cand) => \E p \in pr : B(p) = CB(cand) /\ y \in Tran(p)
@@ -141,9 +141,9 @@ LEMMA LrnsU ==
     <3>1. CASE al \in WFRQDom(pl, r)
       <4>1. PICK rc \in WFRSBRefs(pl, r) : al \in DOMAIN rc.maxqdepth
         BY <3>1 DEF WFRQDom
-      <4>2. PICK p \in pr : rc = Digest(p) /\ B(p) = CB(cand)
+      <4>2. PICK p \in pr : rc = Memo(p) /\ B(p) = CB(cand)
         BY <4>1, <1>sbpick
-      <4>3. al \in DOMAIN DigestMaxQDepth(p)  BY <4>1, <4>2, <1>idp
+      <4>3. al \in DOMAIN MemoMaxQDepth(p)  BY <4>1, <4>2, <1>idp
       <4>4. \E y \in Tran(p) : B(y) = B(p) /\ \E d \in Nat : HasDepth(al, y, d)
         BY <4>2, <4>3, <1>ihmq DEF MaxQDepthInvariant
       <4>5. PICK y \in Tran(p) :
@@ -165,10 +165,10 @@ LEMMA LrnsU ==
                       \E yy \in Tran(p) :
                         B(yy) = B(p) /\ \E d \in Nat : HasDepth(a2, yy, d)}
         BY <4>y, <4>p
-      <4>2. al \in DOMAIN DigestMaxQDepth(p)
+      <4>2. al \in DOMAIN MemoMaxQDepth(p)
         BY <4>1, <4>p, <1>ihmq DEF MaxQDepthInvariant
-      <4>3. Digest(p) \in WFRSBRefs(pl, r)  BY <4>p, <1>sbref
-      <4>4. al \in DOMAIN Digest(p).maxqdepth  BY <4>2, <1>idp
+      <4>3. Memo(p) \in WFRSBRefs(pl, r)  BY <4>p, <1>sbref
+      <4>4. al \in DOMAIN Memo(p).maxqdepth  BY <4>2, <1>idp
       <4> QED BY <4>3, <4>4 DEF WFRQDom
     <3> QED BY <3>1
   <2> QED BY <2>fwd, <2>bwd
@@ -238,10 +238,10 @@ LEMMA LrnsU ==
       <4>1. PICK rc \in {y \in WFRSBRefs(pl, r) : al \in DOMAIN y.maxqdepth} :
               v = QDepthCand(al, rc)
         BY DEF WFRQDepthCands
-      <4>2. PICK p \in pr : rc = Digest(p) /\ B(p) = CB(cand)
+      <4>2. PICK p \in pr : rc = Memo(p) /\ B(p) = CB(cand)
         BY <4>1, <1>sbpick
-      <4>3. al \in DOMAIN DigestMaxQDepth(p)  BY <4>1, <4>2, <1>idp
-      <4>4. v = DigestMaxQDepth(p)[al]  BY <4>1, <4>2, <1>idp DEF QDepthCand
+      <4>3. al \in DOMAIN MemoMaxQDepth(p)  BY <4>1, <4>2, <1>idp
+      <4>4. v = MemoMaxQDepth(p)[al]  BY <4>1, <4>2, <1>idp DEF QDepthCand
       <4> QED BY <4>3, <4>4, <4>2, <1>ihmq DEF MaxQDepthInvariant
     <3>cfin. IsFiniteSet(WFRQDepthCands(al, pl, r))
       <4>frecs. IsFiniteSet(r)  BY FS_Image
@@ -256,18 +256,18 @@ LEMMA LrnsU ==
       BY <3>cne, <3>cnat, <3>cfin, MaxProps DEF WFRRefFrontier
     <3>D0nat. WFRRefFrontier(al, pl, r) \in Nat  BY <3>D0, <3>cnat
     <3>pcand. \A p \in pr :
-                (B(p) = CB(cand) /\ al \in DOMAIN DigestMaxQDepth(p)) =>
-                  DigestMaxQDepth(p)[al] \in WFRQDepthCands(al, pl, r)
+                (B(p) = CB(cand) /\ al \in DOMAIN MemoMaxQDepth(p)) =>
+                  MemoMaxQDepth(p)[al] \in WFRQDepthCands(al, pl, r)
       <4> SUFFICES ASSUME NEW p \in pr, B(p) = CB(cand),
-                          al \in DOMAIN DigestMaxQDepth(p)
-          PROVE DigestMaxQDepth(p)[al] \in WFRQDepthCands(al, pl, r)
+                          al \in DOMAIN MemoMaxQDepth(p)
+          PROVE MemoMaxQDepth(p)[al] \in WFRQDepthCands(al, pl, r)
         OBVIOUS
-      <4>1. Digest(p) \in WFRSBRefs(pl, r)  BY <1>sbref
-      <4>2. al \in DOMAIN Digest(p).maxqdepth  BY <1>idp
-      <4>3. Digest(p)
+      <4>1. Memo(p) \in WFRSBRefs(pl, r)  BY <1>sbref
+      <4>2. al \in DOMAIN Memo(p).maxqdepth  BY <1>idp
+      <4>3. Memo(p)
               \in {y \in WFRSBRefs(pl, r) : al \in DOMAIN y.maxqdepth}
         BY <4>1, <4>2
-      <4>4. QDepthCand(al, Digest(p)) = DigestMaxQDepth(p)[al]
+      <4>4. QDepthCand(al, Memo(p)) = MemoMaxQDepth(p)[al]
         BY <1>idp DEF QDepthCand
       <4> QED BY <4>3, <4>4 DEF WFRQDepthCands
     <3>att0. \E y \in U :
@@ -276,16 +276,16 @@ LEMMA LrnsU ==
       <4>1. PICK rc \in {y \in WFRSBRefs(pl, r) : al \in DOMAIN y.maxqdepth} :
               WFRRefFrontier(al, pl, r) = QDepthCand(al, rc)
         BY <3>D0 DEF WFRQDepthCands
-      <4>2. PICK p \in pr : rc = Digest(p) /\ B(p) = CB(cand)
+      <4>2. PICK p \in pr : rc = Memo(p) /\ B(p) = CB(cand)
         BY <4>1, <1>sbpick
-      <4>3. al \in DOMAIN DigestMaxQDepth(p)  BY <4>1, <4>2, <1>idp
-      <4>4. WFRRefFrontier(al, pl, r) = DigestMaxQDepth(p)[al]
+      <4>3. al \in DOMAIN MemoMaxQDepth(p)  BY <4>1, <4>2, <1>idp
+      <4>4. WFRRefFrontier(al, pl, r) = MemoMaxQDepth(p)[al]
         BY <4>1, <4>2, <1>idp DEF QDepthCand
       <4>5. \E y \in Tran(p) :
-              B(y) = B(p) /\ HasDepth(al, y, DigestMaxQDepth(p)[al])
+              B(y) = B(p) /\ HasDepth(al, y, MemoMaxQDepth(p)[al])
         BY <4>2, <4>3, <1>ihmq DEF MaxQDepthInvariant
       <4>6. PICK y \in Tran(p) :
-              B(y) = B(p) /\ HasDepth(al, y, DigestMaxQDepth(p)[al])
+              B(y) = B(p) /\ HasDepth(al, y, MemoMaxQDepth(p)[al])
         BY <4>5
       <4>7. y \in U  OBVIOUS
       <4> QED BY <4>2, <4>4, <4>6, <4>7
@@ -308,17 +308,17 @@ LEMMA LrnsU ==
                                   = WFRRefFrontier(al, pl, r)} :
                 y \in RefPendingPart(al, rc)
           BY DEF WFRRefPending
-        <5>2. PICK p \in pr : rc = Digest(p) /\ B(p) = CB(cand)
+        <5>2. PICK p \in pr : rc = Memo(p) /\ B(p) = CB(cand)
           BY <5>1, <1>sbpick
-        <5>3. al \in DOMAIN DigestMaxQDepth(p)
-                /\ DigestMaxQDepth(p)[al] = WFRRefFrontier(al, pl, r)
+        <5>3. al \in DOMAIN MemoMaxQDepth(p)
+                /\ MemoMaxQDepth(p)[al] = WFRRefFrontier(al, pl, r)
           BY <5>1, <5>2, <1>idp
-        <5>4. y \in DigestPendingQd(p)[al]
+        <5>4. y \in MemoPendingQd(p)[al]
           BY <5>1, <5>2, <1>idp DEF RefPendingPart
-        <5>5. DigestPendingQd(p)[al]
+        <5>5. MemoPendingQd(p)[al]
                 = {yy \in Tran(p) :
                      B(yy) = B(p)
-                     /\ HasDepth(al, yy, DigestMaxQDepth(p)[al])}
+                     /\ HasDepth(al, yy, MemoMaxQDepth(p)[al])}
           BY <5>2, <5>3, <1>ihmq DEF MaxQDepthInvariant
         <5>6. y \in Tran(p) /\ B(y) = B(p)
                 /\ HasDepth(al, y, WFRRefFrontier(al, pl, r))
@@ -334,37 +334,37 @@ LEMMA LrnsU ==
             PROVE y \in WFRRefPending(al, pl, r)
           OBVIOUS
         <5>p. PICK p \in pr : B(p) = CB(cand) /\ y \in Tran(p)  BY <1>same
-        <5>dom. al \in DOMAIN DigestMaxQDepth(p)
+        <5>dom. al \in DOMAIN MemoMaxQDepth(p)
           <6>1. al \in {a2 \in Learners :
                           \E yy \in Tran(p) :
                             B(yy) = B(p)
                             /\ \E dd \in Nat : HasDepth(a2, yy, dd)}
             BY <5>p, <3>D0nat
           <6> QED BY <6>1, <5>p, <1>ihmq DEF MaxQDepthInvariant
-        <5>ge. WFRRefFrontier(al, pl, r) <= DigestMaxQDepth(p)[al]
+        <5>ge. WFRRefFrontier(al, pl, r) <= MemoMaxQDepth(p)[al]
           BY <5>p, <5>dom, <3>D0nat, <1>ihmq DEF MaxQDepthInvariant
-        <5>le. DigestMaxQDepth(p)[al] <= WFRRefFrontier(al, pl, r)
-          <6>1. DigestMaxQDepth(p)[al] \in WFRQDepthCands(al, pl, r)
+        <5>le. MemoMaxQDepth(p)[al] <= WFRRefFrontier(al, pl, r)
+          <6>1. MemoMaxQDepth(p)[al] \in WFRQDepthCands(al, pl, r)
             BY <5>p, <5>dom, <3>pcand
           <6> QED BY <6>1, <3>D0
-        <5>nat. DigestMaxQDepth(p)[al] \in Nat
+        <5>nat. MemoMaxQDepth(p)[al] \in Nat
           BY <5>p, <5>dom, <1>ihmq DEF MaxQDepthInvariant
-        <5>eq. DigestMaxQDepth(p)[al] = WFRRefFrontier(al, pl, r)
+        <5>eq. MemoMaxQDepth(p)[al] = WFRRefFrontier(al, pl, r)
           BY <5>ge, <5>le, <5>nat, <3>D0nat, SMT
-        <5>mem. y \in DigestPendingQd(p)[al]
-          <6>1. DigestPendingQd(p)[al]
+        <5>mem. y \in MemoPendingQd(p)[al]
+          <6>1. MemoPendingQd(p)[al]
                   = {yy \in Tran(p) :
                        B(yy) = B(p)
-                       /\ HasDepth(al, yy, DigestMaxQDepth(p)[al])}
+                       /\ HasDepth(al, yy, MemoMaxQDepth(p)[al])}
             BY <5>p, <5>dom, <1>ihmq DEF MaxQDepthInvariant
           <6> QED BY <6>1, <5>p, <5>eq
-        <5>flt. Digest(p) \in {z \in WFRSBRefs(pl, r) :
+        <5>flt. Memo(p) \in {z \in WFRSBRefs(pl, r) :
                                  /\ al \in DOMAIN z.maxqdepth
                                  /\ z.maxqdepth[al]
                                       = WFRRefFrontier(al, pl, r)}
-          <6>1. Digest(p) \in WFRSBRefs(pl, r)  BY <5>p, <1>sbref
+          <6>1. Memo(p) \in WFRSBRefs(pl, r)  BY <5>p, <1>sbref
           <6> QED BY <6>1, <5>dom, <5>eq, <1>idp
-        <5>part. y \in RefPendingPart(al, Digest(p))
+        <5>part. y \in RefPendingPart(al, Memo(p))
           BY <5>mem, <1>idp DEF RefPendingPart
         <5> QED BY <5>flt, <5>part DEF WFRRefPending
       <4> QED BY <4>sub, <4>sup

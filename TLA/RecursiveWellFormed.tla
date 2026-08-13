@@ -1,22 +1,22 @@
 ----------------------- MODULE RecursiveWellFormed -----------------------
 \* Definitions only; lemmas live in their own modules.
 \*
-\* A DIGEST is the data structure our recursive function builds for each
+\* A MEMO is the data structure our recursive function builds for each
 \* message: a record summarizing the message's exclusive transitive history
-\* compactly enough that the digest of x can be assembled from the digests
+\* compactly enough that the memo of x can be assembled from the memos
 \* of Refs(x) alone -- the per-round assembly cost scales with |Refs(x)| and
 \* the number of signers, NOT with |Tran(x)| (contrast CombinedFreshQdLrnsId,
-\* which recurses over all of TranExclusive). Digest(x) is defined via
-\* RecursiveMessageRefsFunc; DigestR is the assembly step, whose r argument
-\* is the set of refs' digests.
+\* which recurses over all of TranExclusive). Memo(x) is defined via
+\* RecursiveMessageRefsFunc; MemoR is the assembly step, whose r argument
+\* is the set of refs' memos.
 \*
-\* Digest fields so far:
-\*   id           : the message itself (identifies whose digest each element
+\* Memo fields so far:
+\*   id           : the message itself (identifies whose memo each element
 \*                  of r is during assembly)
 \*   deepestknown : a function whose domain is (proven, in DeepestKnownInv,
 \*                  equal to) SigS(TranExclusive(x)), mapping each signer s
 \*                  of any message in TranExclusive(x) to a pair
-\*                  <<n, d>> where n \in Nat and d is the DIGEST of a
+\*                  <<n, d>> where n \in Nat and d is the MEMO of a
 \*                  message d.id \in TranExclusive(x) with Sig(d.id) = s,
 \*                  such that:
 \*                    - n = 0  iff  s \notin SigS(TranExclusive(d.id));
@@ -29,7 +29,7 @@
 \*   prevtran     : the same-signer previous-message chain, transitively
 \*                  closed: {x} together with the prevtran of the
 \*                  deepestknown message for x's own signer, if there is
-\*                  one (read off that entry's digest). By DeepestKnownPrev,
+\*                  one (read off that entry's memo). By DeepestKnownPrev,
 \*                  the chained message is a member of Prev(x).
 \*   caught       : a subset of Acceptors, proven (CaughtRec) equal to
 \*                  Caught(x): the union of the refs' caughts, plus the
@@ -47,11 +47,11 @@
 \*                  refs' accumulators: frontier >= 1 needs only acceptor-
 \*                  signedness (inherited quorum), frontier 0 needs the
 \*                  pending level-0 attesters to form a quorum. IsTwoA is
-\*                  then ~IsProposal /\ lrns # {} (IsTwoADigest).
+\*                  then ~IsProposal /\ lrns # {} (IsTwoAMemo).
 \*   highesttwoas : a function mapping each learner l with an l-attesting
 \*                  message in TranExclusive(x) (l \in Lrns of it -- usually
 \*                  a 2a; the definition deliberately does not exclude
-\*                  proposals, which Fresh must also see) to the DIGEST of
+\*                  proposals, which Fresh must also see) to the MEMO of
 \*                  a maximal-ballot such message (CHOOSE among equal-ballot
 \*                  ties; V is ballot-determined, so any tie works for
 \*                  Fresh). Characterized by HighestTwoAsRec.
@@ -64,7 +64,7 @@
 \*   newbal       : boolean, proven (NewBalRec) equivalent to "every ref
 \*                  has a strictly lower ballot than x". Descendants use it
 \*                  to check IsOneB-ness of x without seeing x's refs.
-\*   isoneb       : boolean, proven (IsOneBDigest) equivalent to IsOneB(x),
+\*   isoneb       : boolean, proven (IsOneBMemo) equivalent to IsOneB(x),
 \*                  via the refs-local characterization of IsOneBRec: a
 \*                  same-ballot proposal ref with newbal, all other refs
 \*                  strictly lower.
@@ -80,8 +80,8 @@
 \*                  Qd(alpha, x, maxqdepth[alpha]+1) = pendingqd[alpha]\{x}.
 EXTENDS MessageInterface
 
-\* The candidate a ref's digest rc contributes for its own signer s: rc
-\* itself (the whole digest), one level deeper than rc's own deepest entry
+\* The candidate a ref's memo rc contributes for its own signer s: rc
+\* itself (the whole memo), one level deeper than rc's own deepest entry
 \* for s (depth 0 when s signs nothing in rc.id's exclusive history). Named
 \* (rather than inlined in DeepestKnownCandidates) so FS_Image and friends
 \* can match it by name.
@@ -91,13 +91,13 @@ DeepestKnownSignerCand(s, rc) ==
        ELSE 0),
     rc>>
 
-\* The candidate a ref's digest rc NOT signed by s passes through: its own
+\* The candidate a ref's memo rc NOT signed by s passes through: its own
 \* entry for s, unchanged.
 DeepestKnownCarrierCand(s, rc) == rc.deepestknown[s]
 
-\* All candidate <<depth, digest>> pairs for signer s, assembled from the
-\* set r of refs' digests: each ref signed by s REPLACES its own deepest
-\* entry with its whole digest (one deeper); each other ref passes its
+\* All candidate <<depth, memo>> pairs for signer s, assembled from the
+\* set r of refs' memos: each ref signed by s REPLACES its own deepest
+\* entry with its whole memo (one deeper); each other ref passes its
 \* entry for s through, when it has one.
 DeepestKnownCandidates(s, r) ==
   {DeepestKnownSignerCand(s, rc) : rc \in {y \in r : Sig(y.id) = s}}
@@ -106,7 +106,7 @@ DeepestKnownCandidates(s, r) ==
      rc \in {y \in r : Sig(y.id) # s /\ s \in DOMAIN y.deepestknown}}
 
 \* The signers that get an entry: every ref's own signer, plus every signer
-\* some ref already has an entry for. (Proven, for the refs' digests r,
+\* some ref already has an entry for. (Proven, for the refs' memos r,
 \* equal to SigS(TranExclusive(x)).) Every member has at least one
 \* candidate, by construction.
 DeepestKnownSigners(r) ==
@@ -125,15 +125,15 @@ PrevTranAssemble(x, r) ==
               THEN DeepestKnownAssemble(r)[Sig(x)][2].prevtran
               ELSE {})
 
-\* The deepestknown messages a digest knows about: the message of each of
+\* The deepestknown messages a memo knows about: the message of each of
 \* its entries.
-DigestDKMessages(rc) ==
+MemoDKMessages(rc) ==
   {rc.deepestknown[s][2].id : s \in DOMAIN rc.deepestknown}
 
 \* The messages whose chain membership the caught-assembly tests: every ref
 \* itself, plus every deepestknown message of every ref.
 CaughtCandidates(r) ==
-  {rc.id : rc \in r} \cup UNION {DigestDKMessages(rc) : rc \in r}
+  {rc.id : rc \in r} \cup UNION {MemoDKMessages(rc) : rc \in r}
 
 \* The recursively-assembled caught set: everything the refs had already
 \* caught, plus the signer of every candidate that has fallen off the
@@ -151,11 +151,11 @@ BalAssemble(x, r) ==
   Max({rc.bal : rc \in r}
       \cup (IF IsProposal(x) THEN {ProposalBal(x)} ELSE {}))
 
-\* The candidate an l-attesting entry of a ref's digest passes through
+\* The candidate an l-attesting entry of a ref's memo passes through
 \* unchanged. Named so FS_Image can match it by name.
 HTCarrierCand(l, rc) == rc.highesttwoas[l]
 
-\* All candidate digests for learner l, from the set r of refs' digests:
+\* All candidate memos for learner l, from the set r of refs' memos:
 \* each ref that itself attests for l (per its lrns field), plus each ref's
 \* own entry for l, when it has one.
 HTCandidates(l, r) ==
@@ -282,14 +282,14 @@ LrnsAssemble(x, r) ==
        ELSE Bump(alpha, x, r)}
 
 \* The assembly step handed to RecursiveMessageRefsFunc. r is the set of
-\* refs' digests; when Refs(x) = {} (equivalently TranExclusive(x) = {}),
+\* refs' memos; when Refs(x) = {} (equivalently TranExclusive(x) = {}),
 \* deepestknown is the empty function, prevtran is {x}, caught is {}, bal
 \* is x's own proposal ballot (a refless message is a proposal, under
 \* AlwaysAProposal), highesttwoas is the empty function, fresh is
 \* everywhere TRUE, newbal is TRUE, isoneb is FALSE, and maxqdepth /
 \* pendingqd have an entry (0 / {x}) exactly for the learners x attests
 \* level 0 for.
-DigestR(x, r) ==
+MemoR(x, r) ==
   [ id           |-> x,
     deepestknown |-> DeepestKnownAssemble(r),
     prevtran     |-> PrevTranAssemble(x, r),
@@ -303,29 +303,29 @@ DigestR(x, r) ==
     maxqdepth    |-> MaxQDepthAssemble(x, r),
     pendingqd    |-> PendingQdAssemble(x, r) ]
 
-Digest(x) == RecursiveMessageRefsFunc(DigestR, x)
+Memo(x) == RecursiveMessageRefsFunc(MemoR, x)
 
-DeepestKnown(x) == Digest(x).deepestknown
+DeepestKnown(x) == Memo(x).deepestknown
 
-PrevTran(x) == Digest(x).prevtran
+PrevTran(x) == Memo(x).prevtran
 
-DigestCaught(x) == Digest(x).caught
+MemoCaught(x) == Memo(x).caught
 
-DigestBal(x) == Digest(x).bal
+MemoBal(x) == Memo(x).bal
 
-DigestLrns(x) == Digest(x).lrns
+MemoLrns(x) == Memo(x).lrns
 
-DigestHighestTwoAs(x) == Digest(x).highesttwoas
+MemoHighestTwoAs(x) == Memo(x).highesttwoas
 
-DigestFresh(x) == Digest(x).fresh
+MemoFresh(x) == Memo(x).fresh
 
-DigestNewBal(x) == Digest(x).newbal
+MemoNewBal(x) == Memo(x).newbal
 
-DigestIsOneB(x) == Digest(x).isoneb
+MemoIsOneB(x) == Memo(x).isoneb
 
-DigestMaxQDepth(x) == Digest(x).maxqdepth
+MemoMaxQDepth(x) == Memo(x).maxqdepth
 
-DigestPendingQd(x) == Digest(x).pendingqd
+MemoPendingQd(x) == Memo(x).pendingqd
 
 \* The chain depth message w would have as a candidate for signer s: one
 \* more than w's own deepest entry for s, or 0 if it has none.
@@ -335,13 +335,13 @@ DeepestKnownDepth(s, w) ==
 \* The structural invariant of deepestknown, proven for every message by
 \* DeepestKnownInv (via DeepestKnownStep + RefsInduction): the domain is
 \* exactly the signers of the exclusive transitive history, and each entry
-\* is a <<depth, digest>> pair -- the digest is the CANONICAL digest of its
+\* is a <<depth, memo>> pair -- the memo is the CANONICAL memo of its
 \* own message (first conjunct below), which realizes the maximal chain
 \* depth for its signer.
 DeepestKnownInvariant(m) ==
   /\ DOMAIN DeepestKnown(m) = SigS(TranExclusive(m))
   /\ \A s \in DOMAIN DeepestKnown(m) :
-       /\ DeepestKnown(m)[s][2] = Digest(DeepestKnown(m)[s][2].id)
+       /\ DeepestKnown(m)[s][2] = Memo(DeepestKnown(m)[s][2].id)
        /\ DeepestKnown(m)[s][2].id \in TranExclusive(m)
        /\ Sig(DeepestKnown(m)[s][2].id) = s
        /\ DeepestKnown(m)[s][1] \in Nat
@@ -355,16 +355,16 @@ DeepestKnownInvariant(m) ==
 \* The structural invariant of highesttwoas, proven for every message by
 \* HighestTwoAsRec: the domain is exactly the learners attested for
 \* somewhere in the exclusive history, and each entry is the canonical
-\* digest of an l-attesting message of maximal ballot.
+\* memo of an l-attesting message of maximal ballot.
 HighestTwoAsInvariant(m) ==
-  /\ DOMAIN DigestHighestTwoAs(m)
+  /\ DOMAIN MemoHighestTwoAs(m)
        = {l \in Learners : \E y \in TranExclusive(m) : l \in Lrns(y)}
-  /\ \A l \in DOMAIN DigestHighestTwoAs(m) :
-       /\ DigestHighestTwoAs(m)[l] = Digest(DigestHighestTwoAs(m)[l].id)
-       /\ DigestHighestTwoAs(m)[l].id \in TranExclusive(m)
-       /\ l \in Lrns(DigestHighestTwoAs(m)[l].id)
+  /\ \A l \in DOMAIN MemoHighestTwoAs(m) :
+       /\ MemoHighestTwoAs(m)[l] = Memo(MemoHighestTwoAs(m)[l].id)
+       /\ MemoHighestTwoAs(m)[l].id \in TranExclusive(m)
+       /\ l \in Lrns(MemoHighestTwoAs(m)[l].id)
        /\ \A y \in TranExclusive(m) :
-            l \in Lrns(y) => B(y) <= B(DigestHighestTwoAs(m)[l].id)
+            l \in Lrns(y) => B(y) <= B(MemoHighestTwoAs(m)[l].id)
 
 \* The structural invariant of maxqdepth/pendingqd, proven for every
 \* message by MaxQDepthInv: the domain is exactly the learners with a
@@ -372,40 +372,40 @@ HighestTwoAsInvariant(m) ==
 \* attained and maximal, and pendingqd collects exactly the frontier
 \* attesters.
 MaxQDepthInvariant(m) ==
-  /\ DOMAIN DigestMaxQDepth(m)
+  /\ DOMAIN MemoMaxQDepth(m)
        = {alpha \in Learners :
             \E y \in Tran(m) : /\ B(y) = B(m)
                                /\ \E d \in Nat : HasDepth(alpha, y, d)}
-  /\ DOMAIN DigestPendingQd(m) = DOMAIN DigestMaxQDepth(m)
-  /\ \A alpha \in DOMAIN DigestMaxQDepth(m) :
-       /\ DigestMaxQDepth(m)[alpha] \in Nat
+  /\ DOMAIN MemoPendingQd(m) = DOMAIN MemoMaxQDepth(m)
+  /\ \A alpha \in DOMAIN MemoMaxQDepth(m) :
+       /\ MemoMaxQDepth(m)[alpha] \in Nat
        /\ \E y \in Tran(m) :
             /\ B(y) = B(m)
-            /\ HasDepth(alpha, y, DigestMaxQDepth(m)[alpha])
+            /\ HasDepth(alpha, y, MemoMaxQDepth(m)[alpha])
        /\ \A y \in Tran(m) : \A d \in Nat :
             (B(y) = B(m) /\ HasDepth(alpha, y, d))
-              => d <= DigestMaxQDepth(m)[alpha]
-       /\ DigestPendingQd(m)[alpha]
+              => d <= MemoMaxQDepth(m)[alpha]
+       /\ MemoPendingQd(m)[alpha]
             = {y \in Tran(m) :
                  /\ B(y) = B(m)
-                 /\ HasDepth(alpha, y, DigestMaxQDepth(m)[alpha])}
+                 /\ HasDepth(alpha, y, MemoMaxQDepth(m)[alpha])}
 
 \* The combined per-message invariant proven by the single mutual
-\* induction DigestInv: the highesttwoas and maxqdepth/pendingqd
+\* induction MemoInv: the highesttwoas and maxqdepth/pendingqd
 \* invariants together with the correctness of the recursive lrns field.
 \* (They are mutually dependent across a message and its refs: highesttwoas
 \* reads refs' lrns; fresh reads highesttwoas; the frontier's level-0 base
 \* reads fresh; lrns reads the frontier.)
-DigestInvariant(m) ==
+MemoInvariant(m) ==
   /\ HighestTwoAsInvariant(m)
   /\ MaxQDepthInvariant(m)
-  /\ DigestLrns(m) = Lrns(m)
+  /\ MemoLrns(m) = Lrns(m)
 
 \* ------------------------------------------------------------------------
 \* Parameterized correctness predicates: the invariant bodies with the
 \* stored field replaced by an arbitrary value. XxxInvariant(m) is
 \* definitionally XxxCorrect(m, <the field>); the generalized step lemmas
-\* prove XxxCorrect for assemblies over ANY digest set {Digest(p) : p \in S}
+\* prove XxxCorrect for assemblies over ANY memo set {Memo(p) : p \in S}
 \* with Refs(m) \subseteq S \subseteq TranExclusive(m) -- the shape a
 \* candidate's priors take in the concrete world.
 \* ------------------------------------------------------------------------
@@ -413,7 +413,7 @@ DigestInvariant(m) ==
 DeepestKnownCorrect(m, dk) ==
   /\ DOMAIN dk = SigS(TranExclusive(m))
   /\ \A s \in DOMAIN dk :
-       /\ dk[s][2] = Digest(dk[s][2].id)
+       /\ dk[s][2] = Memo(dk[s][2].id)
        /\ dk[s][2].id \in TranExclusive(m)
        /\ Sig(dk[s][2].id) = s
        /\ dk[s][1] \in Nat
@@ -425,7 +425,7 @@ DeepestKnownCorrect(m, dk) ==
 HighestTwoAsCorrect(m, ht) ==
   /\ DOMAIN ht = {l \in Learners : \E y \in TranExclusive(m) : l \in Lrns(y)}
   /\ \A l \in DOMAIN ht :
-       /\ ht[l] = Digest(ht[l].id)
+       /\ ht[l] = Memo(ht[l].id)
        /\ ht[l].id \in TranExclusive(m)
        /\ l \in Lrns(ht[l].id)
        /\ \A y \in TranExclusive(m) :

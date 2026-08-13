@@ -15,7 +15,7 @@
 \* is maintained as the maximal antichain of "everything s knows or has itself
 \* sent" -- see CRecentIsMax / CRecentClosure below -- which is exactly the
 \* CANONICAL priors field for the next message.  (CFilterOut no longer demands
-\* m.priors = CRefs(m) -- canonicality is not digest-checkable -- but safe
+\* m.priors = CRefs(m) -- canonicality is not memo-checkable -- but safe
 \* acceptors still always SEND canonically: CSafeSentCanonical below.)
 \*
 \* Each safe acceptor s is modeled as one process PER (s, x) PAIR it might ever
@@ -314,7 +314,7 @@ CAT(s, x) == (known_messages[s] \cup {x}) \cup CSelfSent(s)
 \* ===================================================================
 \* Every message a safe acceptor has ever sent carries exactly its refs as its
 \* priors.  Well-formedness no longer forces this of arbitrary (byz-sent)
-\* messages -- it is not decidable from digests -- but the record a safe
+\* messages -- it is not decidable from memos -- but the record a safe
 \* acceptor BUILDS always has it, so it is an invariant of CSpec
 \* (CSafeSentCanonicalHolds), and it is the third leg of the refinement
 \* mapping in HPaxosPlusCalConcreteSpecEquivalence: it pins the abstract

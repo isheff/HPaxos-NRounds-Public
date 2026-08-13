@@ -1,6 +1,6 @@
 ------------------------------- MODULE CaughtCand -------------------------------
 \* Concrete reading of CaughtU at the built candidate: the caught assembly
-\* over the priors' digests IS CCaught(cand).  The candidate itself never
+\* over the priors' memos IS CCaught(cand).  The candidate itself never
 \* contributes a witness pair -- everything in the closure is in CTran(cand),
 \* so a pair involving cand fails the incomparability test -- hence CCaughtS
 \* over {cand} \cup U collapses to CCaughtS(U), which resolves to the
@@ -15,10 +15,10 @@ LEMMA CaughtCand ==
          NEW sdr \in CSenders, NEW pl \in CPayload,
          NEW pr, pr \subseteq CMessages, IsFiniteSet(pr)
   PROVE LET cand == [sender |-> sdr, payload |-> pl, priors |-> pr]
-            r    == {Digest(p) : p \in pr}
+            r    == {Memo(p) : p \in pr}
         IN CaughtAssemble(r) = CCaught(cand)
 <1> DEFINE cand == [sender |-> sdr, payload |-> pl, priors |-> pr]
-<1> DEFINE r    == {Digest(p) : p \in pr}
+<1> DEFINE r    == {Memo(p) : p \in pr}
 <1> DEFINE U    == UNION {CTran(p) : p \in pr}
 <1> DEFINE UI   == UNION {Tran(p) : p \in pr}
 <1>msub. pr \subseteq Messages  BY CFields

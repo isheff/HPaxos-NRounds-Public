@@ -1,7 +1,7 @@
 ------------------------ MODULE CSafeSentCanonicalHolds ------------------------
 \* THE canonicality invariant of HPaxosPlusCalConcrete: every message a safe
 \* acceptor has ever sent carries exactly its refs as its priors field.
-\* Well-formedness cannot check this (it is not digest-decidable, and byz
+\* Well-formedness cannot check this (it is not memo-decidable, and byz
 \* senders may violate it freely) -- but honest behaviour maintains it.
 EXTENDS HPaxosPlusCalConcrete, CJointHolds, CSafeSentCanonicalStep, TLAPS
 

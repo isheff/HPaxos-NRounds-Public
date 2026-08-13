@@ -1,13 +1,13 @@
 --------------------------- MODULE PrevTranRec ---------------------------
-\*   DigestRec, DeepestKnownInv -> cited lemmas
+\*   MemoRec, DeepestKnownInv -> cited lemmas
 \*   TLAPS -> proof-only
-EXTENDS RecursiveWellFormed, DigestRec, DeepestKnownInv
+EXTENDS RecursiveWellFormed, MemoRec, DeepestKnownInv
 LOCAL INSTANCE TLAPS
 
 \* PrevTran's defining recursion: m itself, plus the prevtran of the
 \* deepestknown message for m's own signer, when there is one. The
 \* canonicality conjunct of DeepestKnownInvariant turns the prevtran
-\* stored in the entry's digest into PrevTran of the entry's message.
+\* stored in the entry's memo into PrevTran of the entry's message.
 \* (Combined with DeepestKnownPrev, the chained message is in Prev(m).)
 LEMMA PrevTranRec ==
   ASSUME TypeOKMessageInterface, TranTrans, TranFinite, TranAcyclic,
@@ -16,16 +16,16 @@ LEMMA PrevTranRec ==
           = {m} \cup (IF Sig(m) \in DOMAIN DeepestKnown(m)
                         THEN PrevTran(DeepestKnown(m)[Sig(m)][2].id)
                         ELSE {})
-<1> DEFINE recs == {Digest(p) : p \in Refs(m)}
-<1>unf. Digest(m) = DigestR(m, recs)  BY DigestRec
+<1> DEFINE recs == {Memo(p) : p \in Refs(m)}
+<1>unf. Memo(m) = MemoR(m, recs)  BY MemoRec
 <1>pt. PrevTran(m) = PrevTranAssemble(m, recs)
-  BY <1>unf DEF PrevTran, DigestR
+  BY <1>unf DEF PrevTran, MemoR
 <1>dk. DeepestKnown(m) = DeepestKnownAssemble(recs)
-  BY <1>unf DEF DeepestKnown, DigestR
+  BY <1>unf DEF DeepestKnown, MemoR
 <1>a. CASE Sig(m) \in DOMAIN DeepestKnown(m)
   <2>inv. DeepestKnownInvariant(m)  BY DeepestKnownInv
   <2>can. DeepestKnown(m)[Sig(m)][2]
-            = Digest(DeepestKnown(m)[Sig(m)][2].id)
+            = Memo(DeepestKnown(m)[Sig(m)][2].id)
     BY <2>inv, <1>a DEF DeepestKnownInvariant
   <2>ptz. DeepestKnown(m)[Sig(m)][2].prevtran
             = PrevTran(DeepestKnown(m)[Sig(m)][2].id)

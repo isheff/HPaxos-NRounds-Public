@@ -12,7 +12,7 @@ LOCAL INSTANCE TLAPS
 \* ref of that proposal -- has a strictly lower ballot. (B is monotone
 \* along Tran, so bounding the refs bounds everything beneath them; the
 \* count-2 set {z \in Tran(m) : B(z) = B(m)} is then exactly {m, p}.)
-\* This lets a future digest field decide OneB-ness from refs' data alone,
+\* This lets a future memo field decide OneB-ness from refs' data alone,
 \* instead of IsOneB's Cardinality-over-Tran definition.
 LEMMA IsOneBRec ==
   ASSUME MessageInterfaceAssumptions, NEW m \in Messages

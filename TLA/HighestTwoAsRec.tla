@@ -1,16 +1,16 @@
 ------------------------- MODULE HighestTwoAsRec -------------------------
-\*   DigestInv -> cited lemma
-EXTENDS RecursiveWellFormed, DigestInv
+\*   MemoInv -> cited lemma
+EXTENDS RecursiveWellFormed, MemoInv
 
 \* Every message's highesttwoas field satisfies its structural invariant:
 \* domain = learners attested for in the exclusive history, entries are
-\* canonical digests of maximal-ballot attesters. (Corollary of the
-\* combined induction DigestInv, which threads the recursive lrns field
+\* canonical memos of maximal-ballot attesters. (Corollary of the
+\* combined induction MemoInv, which threads the recursive lrns field
 \* this assembly reads.)
 LEMMA HighestTwoAsRec ==
   ASSUME MessageInterfaceAssumptions,
          LearnersMightAgree, ValidLearnerGraphAssumption,
          NEW m \in Messages
   PROVE HighestTwoAsInvariant(m)
-BY DigestInv DEF DigestInvariant
+BY MemoInv DEF MemoInvariant
 ====================================================================

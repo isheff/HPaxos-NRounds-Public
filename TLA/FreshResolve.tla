@@ -1,11 +1,11 @@
 ---------------------------- MODULE FreshResolve ----------------------------
-\*   DigestRec, CaughtRec, BalRec, BBallot, TranSubMessages -> cited lemmas
+\*   MemoRec, CaughtRec, BalRec, BBallot, TranSubMessages -> cited lemmas
 \*   TLAPS -> SMT; proof-only
-EXTENDS RecursiveWellFormed, DigestRec, CaughtStep, CaughtRec, BalStep,
+EXTENDS RecursiveWellFormed, MemoRec, CaughtStep, CaughtRec, BalStep,
         BalRec, BBallot, TranSubMessages
 LOCAL INSTANCE TLAPS
 
-\* Generalized step version of FreshRec: over ANY digest set S between
+\* Generalized step version of FreshRec: over ANY memo set S between
 \* Refs(m) and TranExclusive(m), given the correctness of the highesttwoas
 \* assembly over S as a HYPOTHESIS (so the combined induction can supply it
 \* mid-step), the assembled fresh check decides Fresh exactly. See
@@ -15,20 +15,20 @@ LEMMA FreshResolve ==
          AlwaysAProposal,
          NEW m \in Messages,
          NEW S, Refs(m) \subseteq S, S \subseteq TranExclusive(m),
-         HighestTwoAsCorrect(m, HighestTwoAsAssemble({Digest(p) : p \in S})),
+         HighestTwoAsCorrect(m, HighestTwoAsAssemble({Memo(p) : p \in S})),
          NEW alpha \in Learners
-  PROVE FreshAssemble(alpha, m, {Digest(p) : p \in S}) <=> Fresh(alpha, m)
-<1> DEFINE recs == {Digest(p) : p \in S}
+  PROVE FreshAssemble(alpha, m, {Memo(p) : p \in S}) <=> Fresh(alpha, m)
+<1> DEFINE recs == {Memo(p) : p \in S}
 <1> DEFINE ht == HighestTwoAsAssemble(recs)
 <1> DEFINE CC == Con(alpha, m)
 <1> DEFINE DD == DOMAIN HighestTwoAsAssemble(recs)
 <1>SM. S \subseteq Messages  BY TranSubMessages DEF TranExclusive
 <1>con. ConFromCaught(alpha, CaughtAssemble(recs)) = Con(alpha, m)
-  <2>1. \A p \in S : DigestCaught(p) = Caught(p)  BY <1>SM, CaughtRec
+  <2>1. \A p \in S : MemoCaught(p) = Caught(p)  BY <1>SM, CaughtRec
   <2>2. CaughtAssemble(recs) = Caught(m)  BY <2>1, CaughtStep
   <2> QED BY <2>2 DEF Con
 <1>bv. BalToVal(BalAssemble(m, recs)) = V(m)
-  <2>1. \A p \in S : DigestBal(p) = B(p)  BY <1>SM, BalRec
+  <2>1. \A p \in S : MemoBal(p) = B(p)  BY <1>SM, BalRec
   <2>2. BalAssemble(m, recs) = B(m)  BY <2>1, BalStep
   <2> QED BY <2>2 DEF V
 <1>cond. FreshAssemble(alpha, m, recs) <=>
@@ -57,14 +57,14 @@ LEMMA FreshResolve ==
             /\ ht[l].bal \in Nat
             /\ \A y \in TranExclusive(m) : l \in Lrns(y) => B(y) <= B(ht[l].id)
     OBVIOUS
-  <2>1. /\ ht[l] = Digest(ht[l].id)
+  <2>1. /\ ht[l] = Memo(ht[l].id)
         /\ ht[l].id \in TranExclusive(m)
         /\ l \in Lrns(ht[l].id)
         /\ \A y \in TranExclusive(m) : l \in Lrns(y) => B(y) <= B(ht[l].id)
     BY <1>inv DEF HighestTwoAsCorrect
   <2>2. ht[l].id \in Messages  BY <2>1, TranSubMessages DEF TranExclusive
-  <2>3. DigestBal(ht[l].id) = B(ht[l].id)  BY <2>2, BalRec
-  <2>4. ht[l].bal = B(ht[l].id)  BY <2>1, <2>3 DEF DigestBal
+  <2>3. MemoBal(ht[l].id) = B(ht[l].id)  BY <2>2, BalRec
+  <2>4. ht[l].bal = B(ht[l].id)  BY <2>1, <2>3 DEF MemoBal
   <2>5. B(ht[l].id) \in Ballots  BY <2>2, BBallot
   <2> QED BY <2>1, <2>4, <2>5 DEF Ballots
 \* -------------------------------------------------------------- forward

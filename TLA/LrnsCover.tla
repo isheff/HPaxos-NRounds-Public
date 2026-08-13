@@ -4,14 +4,14 @@
 EXTENDS RecursiveWellFormed, LrnsStep, MaxQDepthInv, TranSubMessages
 LOCAL INSTANCE TLAPS
 
-\* The lrns assembly over the digests of ANY set between Refs(x) and
+\* The lrns assembly over the memos of ANY set between Refs(x) and
 \* TranExclusive(x) equals Lrns(x).
 LEMMA LrnsCover ==
   ASSUME MessageInterfaceAssumptions,
          LearnersMightAgree, ValidLearnerGraphAssumption,
          NEW x \in Messages,
          NEW S, Refs(x) \subseteq S, S \subseteq TranExclusive(x)
-  PROVE LrnsAssemble(x, {Digest(p) : p \in S}) = Lrns(x)
+  PROVE LrnsAssemble(x, {Memo(p) : p \in S}) = Lrns(x)
 <1>tok. TypeOKMessageInterface  BY DEF MessageInterfaceAssumptions
 <1>tt. TranTrans  BY DEF MessageInterfaceAssumptions
 <1>1. S \subseteq Messages

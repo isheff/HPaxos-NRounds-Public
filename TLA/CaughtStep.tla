@@ -1,17 +1,17 @@
 ---------------------------- MODULE CaughtStep ----------------------------
-\*   DigestRec, DeepestKnownInv, DeepestKnownMaximal, PrevTranStruct,
+\*   MemoRec, DeepestKnownInv, DeepestKnownMaximal, PrevTranStruct,
 \*   PrevTranAbsorb, PrevTranChain, PrevTranComplete, PrevTranCovers,
 \*   TranExclusiveRefs, TranSubMessages, CaughtMonotoneTran -> cited lemmas
 \*   TLAPS -> proof-only
-EXTENDS RecursiveWellFormed, DigestRec, DeepestKnownInv, DeepestKnownStep,
+EXTENDS RecursiveWellFormed, MemoRec, DeepestKnownInv, DeepestKnownStep,
         DeepestKnownMaximalG,
         PrevTranStruct, PrevTranAbsorb, PrevTranChain, PrevTranComplete,
         PrevTranCovers, TranExclusiveCover, TranSubMessages, CaughtMonotoneTran
 LOCAL INSTANCE TLAPS
 
-\* The generalized step for CaughtRec: given correct caught digests for ANY
+\* The generalized step for CaughtRec: given correct caught memos for ANY
 \* set S between Refs(x) and TranExclusive(x), the caught assembly over S's
-\* digests equals Caught(x).
+\* memos equals Caught(x).
 \* Soundness: inherited caughts are caught by monotonicity; a candidate off
 \* its signer's assembled chain witnesses a fork (via PrevTranComplete /
 \* DeepestKnownMaximalG). Completeness: two incomparable same-signer
@@ -23,17 +23,17 @@ LEMMA CaughtStep ==
   ASSUME TypeOKMessageInterface, TranTrans, TranFinite, TranAcyclic,
          NEW x \in Messages,
          NEW S, Refs(x) \subseteq S, S \subseteq TranExclusive(x),
-         \A p \in S : DigestCaught(p) = Caught(p)
-  PROVE CaughtAssemble({Digest(p) : p \in S}) = Caught(x)
+         \A p \in S : MemoCaught(p) = Caught(p)
+  PROVE CaughtAssemble({Memo(p) : p \in S}) = Caught(x)
 <1> DEFINE R == S
-<1> DEFINE recs == {Digest(p) : p \in R}
+<1> DEFINE recs == {Memo(p) : p \in R}
 <1> DEFINE caA == CaughtAssemble(recs)
 <1> DEFINE dkA == DeepestKnownAssemble(recs)
 <1> DEFINE Test == {y \in CaughtCandidates(recs) :
                       /\ Sig(y) \in Acceptors
                       /\ y \notin DeepestKnownAssemble(recs)[Sig(y)][2].prevtran}
 <1> HIDE DEF Test
-<1>ih. \A p \in R : DigestCaught(p) = Caught(p)  OBVIOUS
+<1>ih. \A p \in R : MemoCaught(p) = Caught(p)  OBVIOUS
 <1>rsub. R \subseteq TranExclusive(x)  OBVIOUS
 <1>rM. R \subseteq Messages  BY <1>rsub, TranSubMessages DEF TranExclusive
 <1>tex. TranExclusive(x) = UNION {Tran(p) : p \in R}  BY TranExclusiveCover
@@ -42,18 +42,18 @@ LEMMA CaughtStep ==
 <1>pTE. \A p \in R : p \in TranExclusive(x)  BY <1>rsub
 <1>teM. TranExclusive(x) \subseteq Messages
   BY TranSubMessages DEF TranExclusive
-<1>idp. \A p \in R : /\ Digest(p).id = p
-                     /\ Digest(p).deepestknown = DeepestKnown(p)
-                     /\ Digest(p).caught = DigestCaught(p)
+<1>idp. \A p \in R : /\ Memo(p).id = p
+                     /\ Memo(p).deepestknown = DeepestKnown(p)
+                     /\ Memo(p).caught = MemoCaught(p)
   <2> SUFFICES ASSUME NEW p \in R
-      PROVE /\ Digest(p).id = p
-            /\ Digest(p).deepestknown = DeepestKnown(p)
-            /\ Digest(p).caught = DigestCaught(p)
+      PROVE /\ Memo(p).id = p
+            /\ Memo(p).deepestknown = DeepestKnown(p)
+            /\ Memo(p).caught = MemoCaught(p)
     OBVIOUS
   <2>1. p \in Messages  BY <1>rM
-  <2>2. Digest(p) = DigestR(p, {Digest(q) : q \in Refs(p)})
-    BY <2>1, DigestRec
-  <2> QED BY <2>2 DEF DigestR, DeepestKnown, DigestCaught
+  <2>2. Memo(p) = MemoR(p, {Memo(q) : q \in Refs(p)})
+    BY <2>1, MemoRec
+  <2> QED BY <2>2 DEF MemoR, DeepestKnown, MemoCaught
 <1>invA. DeepestKnownCorrect(x, dkA)
   <2>1. \A p \in R : DeepestKnownInvariant(p)  BY <1>rM, DeepestKnownInv
   <2> QED BY <2>1, DeepestKnownStep
@@ -68,7 +68,7 @@ LEMMA CaughtStep ==
       PROVE DeepestKnownAssemble(recs)[s][2].prevtran
               = PrevTran(dkA[s][2].id)
     OBVIOUS
-  <2>can. dkA[s][2] = Digest(dkA[s][2].id)
+  <2>can. dkA[s][2] = Memo(dkA[s][2].id)
     BY <1>invA DEF DeepestKnownCorrect
   <2> QED BY <2>can DEF PrevTran
 <1>candTE. \A y \in CaughtCandidates(recs) : y \in TranExclusive(x)
@@ -76,36 +76,36 @@ LEMMA CaughtStep ==
       PROVE y \in TranExclusive(x)
     OBVIOUS
   <2>split. \/ y \in {rc.id : rc \in recs}
-            \/ y \in UNION {DigestDKMessages(rc) : rc \in recs}
+            \/ y \in UNION {MemoDKMessages(rc) : rc \in recs}
     BY DEF CaughtCandidates
   <2>a. CASE y \in {rc.id : rc \in recs}
     <3>1. PICK rc \in recs : y = rc.id  BY <2>a
-    <3>2. PICK p \in R : rc = Digest(p)  OBVIOUS
+    <3>2. PICK p \in R : rc = Memo(p)  OBVIOUS
     <3>3. y = p  BY <3>1, <3>2, <1>idp
     <3> QED BY <3>3, <1>pTE
-  <2>b. CASE y \in UNION {DigestDKMessages(rc) : rc \in recs}
-    <3>1. PICK rc \in recs : y \in DigestDKMessages(rc)  BY <2>b
-    <3>2. PICK p \in R : rc = Digest(p)  OBVIOUS
+  <2>b. CASE y \in UNION {MemoDKMessages(rc) : rc \in recs}
+    <3>1. PICK rc \in recs : y \in MemoDKMessages(rc)  BY <2>b
+    <3>2. PICK p \in R : rc = Memo(p)  OBVIOUS
     <3>3. PICK s \in DOMAIN DeepestKnown(p) : y = DeepestKnown(p)[s][2].id
-      BY <3>1, <3>2, <1>idp DEF DigestDKMessages
+      BY <3>1, <3>2, <1>idp DEF MemoDKMessages
     <3>invp. DeepestKnownInvariant(p)  BY <1>rM, DeepestKnownInv
     <3>4. y \in TranExclusive(p)  BY <3>3, <3>invp DEF DeepestKnownInvariant
     <3> QED BY <3>4, <1>texPP
   <2> QED BY <2>split, <2>a, <2>b
 <1>candRef. \A p \in R : p \in CaughtCandidates(recs)
   <2> SUFFICES ASSUME NEW p \in R PROVE p \in CaughtCandidates(recs)  OBVIOUS
-  <2>1. Digest(p) \in recs  OBVIOUS
-  <2>2. Digest(p).id = p  BY <1>idp
+  <2>1. Memo(p) \in recs  OBVIOUS
+  <2>2. Memo(p).id = p  BY <1>idp
   <2> QED BY <2>1, <2>2 DEF CaughtCandidates
 <1>candDK. \A p \in R : \A s \in DOMAIN DeepestKnown(p) :
              DeepestKnown(p)[s][2].id \in CaughtCandidates(recs)
   <2> SUFFICES ASSUME NEW p \in R, NEW s \in DOMAIN DeepestKnown(p)
       PROVE DeepestKnown(p)[s][2].id \in CaughtCandidates(recs)
     OBVIOUS
-  <2>1. Digest(p) \in recs  OBVIOUS
-  <2>2. Digest(p).deepestknown = DeepestKnown(p)  BY <1>idp
-  <2>3. DeepestKnown(p)[s][2].id \in DigestDKMessages(Digest(p))
-    BY <2>2 DEF DigestDKMessages
+  <2>1. Memo(p) \in recs  OBVIOUS
+  <2>2. Memo(p).deepestknown = DeepestKnown(p)  BY <1>idp
+  <2>3. DeepestKnown(p)[s][2].id \in MemoDKMessages(Memo(p))
+    BY <2>2 DEF MemoDKMessages
   <2> QED BY <2>1, <2>3 DEF CaughtCandidates
 \* -------------------------------------------------------------- soundness
 <1>sound. caA \subseteq Caught(x)
@@ -114,7 +114,7 @@ LEMMA CaughtStep ==
         PROVE a \in Caught(x)
       OBVIOUS
     <3>1. PICK rc \in recs : a \in rc.caught  OBVIOUS
-    <3>2. PICK p \in R : rc = Digest(p)  OBVIOUS
+    <3>2. PICK p \in R : rc = Memo(p)  OBVIOUS
     <3>3. a \in Caught(p)  BY <3>1, <3>2, <1>idp, <1>ih
     <3>4. p \in Tran(x)  BY <1>pTE DEF TranExclusive
     <3>5. Caught(p) \subseteq Caught(x)  BY <3>4, CaughtMonotoneTran
@@ -169,8 +169,8 @@ LEMMA CaughtStep ==
     BY <2>ne, <2>w DEF TranExclusive
   <2>caseA. CASE \E p \in R : a \in Caught(p)
     <3>1. PICK p \in R : a \in Caught(p)  BY <2>caseA
-    <3>2. a \in Digest(p).caught  BY <3>1, <1>idp, <1>ih
-    <3>3. Digest(p) \in recs  OBVIOUS
+    <3>2. a \in Memo(p).caught  BY <3>1, <1>idp, <1>ih
+    <3>3. Memo(p) \in recs  OBVIOUS
     <3>4. a \in UNION {rc.caught : rc \in recs}  BY <3>2, <3>3
     <3> QED BY <3>4, <1>ca
   <2>caseB. CASE \A p \in R : a \notin Caught(p)

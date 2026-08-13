@@ -1,7 +1,7 @@
 -------------------------------- MODULE CaughtU --------------------------------
 \* Plan step (b) toward CWellFormedRec: the (pr, U)-virtualized CaughtStep.
 \* For a FINITE prior set pr \subseteq Messages -- with no assembling message
-\* -- the caught assembly over pr's digests equals CaughtS(U) for U := UNION
+\* -- the caught assembly over pr's memos equals CaughtS(U) for U := UNION
 \* {Tran(p) : p \in pr}.  Soundness: inherited caughts have their witnesses
 \* inside a member's closure (\subseteq U); a candidate off its signer's
 \* assembled chain witnesses a fork (PrevTranComplete / DeepestKnownMaximalU).
@@ -9,7 +9,7 @@
 \* chain of SOME candidate (PrevTranCovers); if both candidates passed the
 \* test, absorption would put both witnesses on one totally-ordered chain
 \* (PrevTranChain) -- so some candidate fails and the signer is collected.
-EXTENDS DigestUDefs, DigestRec, DeepestKnownInv, DeepestKnownU,
+EXTENDS MemoUDefs, MemoRec, DeepestKnownInv, DeepestKnownU,
         DeepestKnownMaximalU, CaughtRec, PrevTranStruct, PrevTranAbsorb,
         PrevTranChain, PrevTranComplete, PrevTranCovers, TranSubMessages
 LOCAL INSTANCE TLAPS
@@ -17,10 +17,10 @@ LOCAL INSTANCE TLAPS
 LEMMA CaughtU ==
   ASSUME TypeOKMessageInterface, TranTrans, TranFinite, TranAcyclic,
          NEW pr, pr \subseteq Messages, IsFiniteSet(pr)
-  PROVE CaughtAssemble({Digest(p) : p \in pr})
+  PROVE CaughtAssemble({Memo(p) : p \in pr})
           = CaughtS(UNION {Tran(p) : p \in pr})
 <1> DEFINE R == pr
-<1> DEFINE recs == {Digest(p) : p \in R}
+<1> DEFINE recs == {Memo(p) : p \in R}
 <1> DEFINE caA == CaughtAssemble(recs)
 <1> DEFINE dkA == DeepestKnownAssemble(recs)
 <1> DEFINE UU == UNION {Tran(p) : p \in R}
@@ -28,7 +28,7 @@ LEMMA CaughtU ==
                       /\ Sig(y) \in Acceptors
                       /\ y \notin DeepestKnownAssemble(recs)[Sig(y)][2].prevtran}
 <1> HIDE DEF Test
-<1>ih. \A p \in R : DigestCaught(p) = Caught(p)  BY CaughtRec
+<1>ih. \A p \in R : MemoCaught(p) = Caught(p)  BY CaughtRec
 <1>rM. R \subseteq Messages  OBVIOUS
 <1>texP. \A p \in R : Tran(p) \subseteq UU  OBVIOUS
 <1>texPP. \A p \in R : TranExclusive(p) \subseteq UU
@@ -46,18 +46,18 @@ LEMMA CaughtU ==
   <2>1. PICK p \in R : z \in Tran(p)  OBVIOUS
   <2>2. Tran(z) \subseteq Tran(p)  BY <2>1 DEF TranTrans
   <2> QED BY <2>2, <1>texP
-<1>idp. \A p \in R : /\ Digest(p).id = p
-                     /\ Digest(p).deepestknown = DeepestKnown(p)
-                     /\ Digest(p).caught = DigestCaught(p)
+<1>idp. \A p \in R : /\ Memo(p).id = p
+                     /\ Memo(p).deepestknown = DeepestKnown(p)
+                     /\ Memo(p).caught = MemoCaught(p)
   <2> SUFFICES ASSUME NEW p \in R
-      PROVE /\ Digest(p).id = p
-            /\ Digest(p).deepestknown = DeepestKnown(p)
-            /\ Digest(p).caught = DigestCaught(p)
+      PROVE /\ Memo(p).id = p
+            /\ Memo(p).deepestknown = DeepestKnown(p)
+            /\ Memo(p).caught = MemoCaught(p)
     OBVIOUS
   <2>1. p \in Messages  BY <1>rM
-  <2>2. Digest(p) = DigestR(p, {Digest(q) : q \in Refs(p)})
-    BY <2>1, DigestRec
-  <2> QED BY <2>2 DEF DigestR, DeepestKnown, DigestCaught
+  <2>2. Memo(p) = MemoR(p, {Memo(q) : q \in Refs(p)})
+    BY <2>1, MemoRec
+  <2> QED BY <2>2 DEF MemoR, DeepestKnown, MemoCaught
 <1>invA. DeepestKnownCorrectU(UU, dkA)
   BY DeepestKnownU
 <1>dom. DOMAIN dkA = SigS(UU)
@@ -71,7 +71,7 @@ LEMMA CaughtU ==
       PROVE DeepestKnownAssemble(recs)[s][2].prevtran
               = PrevTran(dkA[s][2].id)
     OBVIOUS
-  <2>can. dkA[s][2] = Digest(dkA[s][2].id)
+  <2>can. dkA[s][2] = Memo(dkA[s][2].id)
     BY <1>invA DEF DeepestKnownCorrectU
   <2> QED BY <2>can DEF PrevTran
 <1>candTE. \A y \in CaughtCandidates(recs) : y \in UU
@@ -79,36 +79,36 @@ LEMMA CaughtU ==
       PROVE y \in UU
     OBVIOUS
   <2>split. \/ y \in {rc.id : rc \in recs}
-            \/ y \in UNION {DigestDKMessages(rc) : rc \in recs}
+            \/ y \in UNION {MemoDKMessages(rc) : rc \in recs}
     BY DEF CaughtCandidates
   <2>a. CASE y \in {rc.id : rc \in recs}
     <3>1. PICK rc \in recs : y = rc.id  BY <2>a
-    <3>2. PICK p \in R : rc = Digest(p)  OBVIOUS
+    <3>2. PICK p \in R : rc = Memo(p)  OBVIOUS
     <3>3. y = p  BY <3>1, <3>2, <1>idp
     <3> QED BY <3>3, <1>pTE
-  <2>b. CASE y \in UNION {DigestDKMessages(rc) : rc \in recs}
-    <3>1. PICK rc \in recs : y \in DigestDKMessages(rc)  BY <2>b
-    <3>2. PICK p \in R : rc = Digest(p)  OBVIOUS
+  <2>b. CASE y \in UNION {MemoDKMessages(rc) : rc \in recs}
+    <3>1. PICK rc \in recs : y \in MemoDKMessages(rc)  BY <2>b
+    <3>2. PICK p \in R : rc = Memo(p)  OBVIOUS
     <3>3. PICK s \in DOMAIN DeepestKnown(p) : y = DeepestKnown(p)[s][2].id
-      BY <3>1, <3>2, <1>idp DEF DigestDKMessages
+      BY <3>1, <3>2, <1>idp DEF MemoDKMessages
     <3>invp. DeepestKnownInvariant(p)  BY <1>rM, DeepestKnownInv
     <3>4. y \in TranExclusive(p)  BY <3>3, <3>invp DEF DeepestKnownInvariant
     <3> QED BY <3>4, <1>texPP
   <2> QED BY <2>split, <2>a, <2>b
 <1>candRef. \A p \in R : p \in CaughtCandidates(recs)
   <2> SUFFICES ASSUME NEW p \in R PROVE p \in CaughtCandidates(recs)  OBVIOUS
-  <2>1. Digest(p) \in recs  OBVIOUS
-  <2>2. Digest(p).id = p  BY <1>idp
+  <2>1. Memo(p) \in recs  OBVIOUS
+  <2>2. Memo(p).id = p  BY <1>idp
   <2> QED BY <2>1, <2>2 DEF CaughtCandidates
 <1>candDK. \A p \in R : \A s \in DOMAIN DeepestKnown(p) :
              DeepestKnown(p)[s][2].id \in CaughtCandidates(recs)
   <2> SUFFICES ASSUME NEW p \in R, NEW s \in DOMAIN DeepestKnown(p)
       PROVE DeepestKnown(p)[s][2].id \in CaughtCandidates(recs)
     OBVIOUS
-  <2>1. Digest(p) \in recs  OBVIOUS
-  <2>2. Digest(p).deepestknown = DeepestKnown(p)  BY <1>idp
-  <2>3. DeepestKnown(p)[s][2].id \in DigestDKMessages(Digest(p))
-    BY <2>2 DEF DigestDKMessages
+  <2>1. Memo(p) \in recs  OBVIOUS
+  <2>2. Memo(p).deepestknown = DeepestKnown(p)  BY <1>idp
+  <2>3. DeepestKnown(p)[s][2].id \in MemoDKMessages(Memo(p))
+    BY <2>2 DEF MemoDKMessages
   <2> QED BY <2>1, <2>3 DEF CaughtCandidates
 \* -------------------------------------------------------------- soundness
 <1>sound. caA \subseteq CaughtS(UU)
@@ -117,7 +117,7 @@ LEMMA CaughtU ==
         PROVE a \in CaughtS(UU)
       OBVIOUS
     <3>1. PICK rc \in recs : a \in rc.caught  OBVIOUS
-    <3>2. PICK p \in R : rc = Digest(p)  OBVIOUS
+    <3>2. PICK p \in R : rc = Memo(p)  OBVIOUS
     <3>3. a \in Caught(p)  BY <3>1, <3>2, <1>idp, <1>ih
     <3>4. PICK m1 \in Tran(p), m2 \in Tran(p) :
             /\ Sig(m1) = a /\ Sig(m2) = a
@@ -174,8 +174,8 @@ LEMMA CaughtU ==
     BY DEF CaughtS
   <2>caseA. CASE \E p \in R : a \in Caught(p)
     <3>1. PICK p \in R : a \in Caught(p)  BY <2>caseA
-    <3>2. a \in Digest(p).caught  BY <3>1, <1>idp, <1>ih
-    <3>3. Digest(p) \in recs  OBVIOUS
+    <3>2. a \in Memo(p).caught  BY <3>1, <1>idp, <1>ih
+    <3>3. Memo(p) \in recs  OBVIOUS
     <3>4. a \in UNION {rc.caught : rc \in recs}  BY <3>2, <3>3
     <3> QED BY <3>4, <1>ca
   <2>caseB. CASE \A p \in R : a \notin Caught(p)

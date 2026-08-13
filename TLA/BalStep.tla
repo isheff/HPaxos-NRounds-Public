@@ -1,16 +1,16 @@
 ------------------------------ MODULE BalStep ------------------------------
-\*   DigestRec, TranRefs, TranExclusiveRefs, TranSubMessages, BMonotone,
+\*   MemoRec, TranRefs, TranExclusiveRefs, TranSubMessages, BMonotone,
 \*   BBallot, MaxBSetProperty, MaxProps -> cited lemmas
 \*   FiniteSetTheorems -> FS_Subset, FS_Image, FS_Union, FS_Singleton,
 \*                        FS_EmptySet
 \*   TLAPS -> SMT; proof-only
-EXTENDS RecursiveWellFormed, DigestRec, TranRefs, TranExclusiveCover,
+EXTENDS RecursiveWellFormed, MemoRec, TranRefs, TranExclusiveCover,
         TranSubMessages, BMonotone, BBallot, MaxBSetProperty, MaxProps,
         FiniteSetTheorems
 LOCAL INSTANCE TLAPS
 
-\* The generalized step for BalRec: given correct bal digests for ANY set S
-\* between Refs(x) and TranExclusive(x), the assembly over S's digests
+\* The generalized step for BalRec: given correct bal memos for ANY set S
+\* between Refs(x) and TranExclusive(x), the assembly over S's memos
 \* equals B(x). Squeeze: every candidate is <= B(x) (B is monotone along
 \* Tran; own proposal ballot is one of B(x)'s candidates), and B(x)'s
 \* achieving proposal is either x itself (own candidate) or lives in some
@@ -20,29 +20,29 @@ LEMMA BalStep ==
          AlwaysAProposal,
          NEW x \in Messages,
          NEW S, Refs(x) \subseteq S, S \subseteq TranExclusive(x),
-         \A p \in S : DigestBal(p) = B(p)
-  PROVE BalAssemble(x, {Digest(p) : p \in S}) = B(x)
+         \A p \in S : MemoBal(p) = B(p)
+  PROVE BalAssemble(x, {Memo(p) : p \in S}) = B(x)
 <1> DEFINE R == S
-<1> DEFINE recs == {Digest(p) : p \in R}
+<1> DEFINE recs == {Memo(p) : p \in R}
 <1> DEFINE Own == IF IsProposal(x) THEN {ProposalBal(x)} ELSE {}
 <1> DEFINE BSet == {rc.bal : rc \in recs} \cup Own
-<1>ih. \A p \in R : DigestBal(p) = B(p)  OBVIOUS
+<1>ih. \A p \in R : MemoBal(p) = B(p)  OBVIOUS
 <1>rsub. R \subseteq TranExclusive(x)  OBVIOUS
 <1>rM. R \subseteq Messages  BY <1>rsub, TranSubMessages DEF TranExclusive
 <1>rT. R \subseteq Tran(x)  BY <1>rsub DEF TranExclusive
-<1>idp. \A p \in R : Digest(p).bal = B(p)  BY <1>ih DEF DigestBal
+<1>idp. \A p \in R : Memo(p).bal = B(p)  BY <1>ih DEF MemoBal
 <1>unfb. BalAssemble(x, recs) = Max(BSet)
   BY DEF BalAssemble
 <1>bimg. {rc.bal : rc \in recs} = {B(p) : p \in R}
   <2>sub. {rc.bal : rc \in recs} \subseteq {B(p) : p \in R}
     <3> SUFFICES ASSUME NEW rc \in recs
         PROVE rc.bal \in {B(p) : p \in R}  OBVIOUS
-    <3>1. PICK p \in R : rc = Digest(p)  OBVIOUS
+    <3>1. PICK p \in R : rc = Memo(p)  OBVIOUS
     <3> QED BY <3>1, <1>idp
   <2>sup. {B(p) : p \in R} \subseteq {rc.bal : rc \in recs}
     <3> SUFFICES ASSUME NEW p \in R
         PROVE B(p) \in {rc.bal : rc \in recs}  OBVIOUS
-    <3>1. Digest(p) \in recs  OBVIOUS
+    <3>1. Memo(p) \in recs  OBVIOUS
     <3> QED BY <3>1, <1>idp
   <2> QED BY <2>sub, <2>sup
 <1>getx. /\ GetProposals(x) # {}

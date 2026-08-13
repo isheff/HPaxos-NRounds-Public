@@ -1,12 +1,12 @@
 ------------------------ MODULE IsOneBAssembleCover ------------------------
 \*   BalStep, BalRec, NewBalRec, IsOneBRec, TranExclusiveRefs,
-\*   TranSubMessages, BMonotone, BBallot, DigestRec -> cited lemmas
+\*   TranSubMessages, BMonotone, BBallot, MemoRec -> cited lemmas
 \*   TLAPS -> SMT; proof-only
 EXTENDS RecursiveWellFormed, BalStep, BalRec, NewBalRec, IsOneBRec,
-        TranExclusiveRefs, TranSubMessages, BMonotone, BBallot, DigestRec
+        TranExclusiveRefs, TranSubMessages, BMonotone, BBallot, MemoRec
 LOCAL INSTANCE TLAPS
 
-\* The isoneb check over ANY digest set between Refs(x) and
+\* The isoneb check over ANY memo set between Refs(x) and
 \* TranExclusive(x) still decides IsOneB(x). Key: the "all other members
 \* strictly lower" clause FORCES the witness proposal to be maximal (a
 \* non-ref witness sits under a ref of equal ballot, contradicting the
@@ -16,34 +16,34 @@ LEMMA IsOneBAssembleCover ==
   ASSUME MessageInterfaceAssumptions,
          NEW x \in Messages,
          NEW S, Refs(x) \subseteq S, S \subseteq TranExclusive(x)
-  PROVE IsOneBAssemble(x, {Digest(p) : p \in S}) <=> IsOneB(x)
+  PROVE IsOneBAssemble(x, {Memo(p) : p \in S}) <=> IsOneB(x)
 <1>tok. TypeOKMessageInterface  BY DEF MessageInterfaceAssumptions
 <1>tf. TranFinite  BY DEF MessageInterfaceAssumptions
 <1>tt. TranTrans  BY DEF MessageInterfaceAssumptions
 <1>ta. TranAcyclic  BY DEF MessageInterfaceAssumptions
 <1>anp. AlwaysAProposal  BY DEF MessageInterfaceAssumptions
-<1> DEFINE recs == {Digest(p) : p \in S}
+<1> DEFINE recs == {Memo(p) : p \in S}
 <1>SM. S \subseteq Messages
   BY <1>tok, <1>tt, TranSubMessages DEF TranExclusive
-<1>ihb. \A p \in S : DigestBal(p) = B(p)
+<1>ihb. \A p \in S : MemoBal(p) = B(p)
   BY <1>SM, <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, BalRec
 <1>bal. BalAssemble(x, recs) = B(x)
   BY <1>ihb, <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, BalStep
-<1>idp. \A p \in S : Digest(p).id = p /\ Digest(p).bal = B(p)
+<1>idp. \A p \in S : Memo(p).id = p /\ Memo(p).bal = B(p)
   <2> SUFFICES ASSUME NEW p \in S
-      PROVE Digest(p).id = p /\ Digest(p).bal = B(p)  OBVIOUS
+      PROVE Memo(p).id = p /\ Memo(p).bal = B(p)  OBVIOUS
   <2>1. p \in Messages  BY <1>SM
-  <2>2. Digest(p) = DigestR(p, {Digest(q) : q \in Refs(p)})
-    BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, DigestRec
-  <2> QED BY <2>2, <1>ihb DEF DigestR, DigestBal
+  <2>2. Memo(p) = MemoR(p, {Memo(q) : q \in Refs(p)})
+    BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, MemoRec
+  <2> QED BY <2>2, <1>ihb DEF MemoR, MemoBal
 <1>nbp. \A p \in S :
-          Digest(p).newbal <=> (\A y \in Refs(p) : B(y) < B(p))
+          Memo(p).newbal <=> (\A y \in Refs(p) : B(y) < B(p))
   <2> SUFFICES ASSUME NEW p \in S
-      PROVE Digest(p).newbal <=> (\A y \in Refs(p) : B(y) < B(p))  OBVIOUS
+      PROVE Memo(p).newbal <=> (\A y \in Refs(p) : B(y) < B(p))  OBVIOUS
   <2>1. p \in Messages  BY <1>SM
-  <2>2. DigestNewBal(p) <=> (\A y \in Refs(p) : B(y) < B(p))
+  <2>2. MemoNewBal(p) <=> (\A y \in Refs(p) : B(y) < B(p))
     BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, NewBalRec
-  <2> QED BY <2>2 DEF DigestNewBal
+  <2> QED BY <2>2 DEF MemoNewBal
 <1>tex. TranExclusive(x) = UNION {Tran(r) : r \in Refs(x)}
   BY <1>tok, <1>tf, <1>tt, <1>ta, TranExclusiveRefs
 <1>refsM. Refs(x) \subseteq Messages
@@ -77,16 +77,16 @@ LEMMA IsOneBAssembleCover ==
              /\ rc.newbal
              /\ \A rc2 \in recs : rc2 = rc \/ rc2.bal < BalAssemble(x, recs)
       BY <2>1 DEF IsOneBAssemble
-    <3>p. PICK p \in S : rc = Digest(p)  OBVIOUS
+    <3>p. PICK p \in S : rc = Memo(p)  OBVIOUS
     <3>prop. IsProposal(p)  BY <3>rc, <3>p, <1>idp
     <3>pb. B(p) = B(x)  BY <3>rc, <3>p, <1>idp, <1>bal
     <3>pref. \A y \in Refs(p) : B(y) < B(p)  BY <3>rc, <3>p, <1>nbp
     <3>oth. \A q \in S : q = p \/ B(q) < B(x)
       <4> SUFFICES ASSUME NEW q \in S, q # p PROVE B(q) < B(x)
         OBVIOUS
-      <4>1. Digest(q) \in recs  OBVIOUS
-      <4>2. Digest(q) # rc  BY <3>p, <1>idp
-      <4>3. Digest(q).bal < BalAssemble(x, recs)  BY <3>rc, <4>1, <4>2
+      <4>1. Memo(q) \in recs  OBVIOUS
+      <4>2. Memo(q) # rc  BY <3>p, <1>idp
+      <4>3. Memo(q).bal < BalAssemble(x, recs)  BY <3>rc, <4>1, <4>2
       <4> QED BY <4>3, <1>idp, <1>bal
     <3>pRefs. p \in Refs(x)
       <4>1. p \in TranExclusive(x)  OBVIOUS
@@ -127,11 +127,11 @@ LEMMA IsOneBAssembleCover ==
     <3>np. ~IsProposal(x)  BY <2>1, <1>rec
     <3>pS. p \in S  OBVIOUS
     <3>pM. p \in Messages  BY <1>refsM
-    <3>rc. Digest(p) \in recs  BY <3>pS
-    <3>c1. IsProposal(Digest(p).id)  BY <3>p, <3>pS, <1>idp
-    <3>c2. Digest(p).bal = BalAssemble(x, recs)
+    <3>rc. Memo(p) \in recs  BY <3>pS
+    <3>c1. IsProposal(Memo(p).id)  BY <3>p, <3>pS, <1>idp
+    <3>c2. Memo(p).bal = BalAssemble(x, recs)
       BY <3>p, <3>pS, <1>idp, <1>bal
-    <3>c3. Digest(p).newbal
+    <3>c3. Memo(p).newbal
       <4>1. \A y \in Refs(p) : B(y) < B(p)
         <5> SUFFICES ASSUME NEW y \in Refs(p) PROVE B(y) < B(p)  OBVIOUS
         <5>1. y # p  BY <3>pM, <1>selfref
@@ -140,10 +140,10 @@ LEMMA IsOneBAssembleCover ==
       <4> QED BY <4>1, <3>pS, <1>nbp
     <3>texp. TranExclusive(p) = UNION {Tran(r) : r \in Refs(p)}
       BY <3>pM, <1>tok, <1>tf, <1>tt, <1>ta, TranExclusiveRefs
-    <3>c4. \A rc2 \in recs : rc2 = Digest(p) \/ rc2.bal < BalAssemble(x, recs)
-      <4> SUFFICES ASSUME NEW rc2 \in recs, rc2 # Digest(p)
+    <3>c4. \A rc2 \in recs : rc2 = Memo(p) \/ rc2.bal < BalAssemble(x, recs)
+      <4> SUFFICES ASSUME NEW rc2 \in recs, rc2 # Memo(p)
           PROVE rc2.bal < BalAssemble(x, recs)  OBVIOUS
-      <4>q. PICK q \in S : rc2 = Digest(q)  OBVIOUS
+      <4>q. PICK q \in S : rc2 = Memo(q)  OBVIOUS
       <4>qp. q # p  BY <4>q, <3>pS, <1>idp
       <4>qb. B(q) < B(x)
         <5>1. q \in TranExclusive(x)  OBVIOUS

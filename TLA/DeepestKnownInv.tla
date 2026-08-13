@@ -1,7 +1,7 @@
 -------------------------- MODULE DeepestKnownInv --------------------------
-\*   DeepestKnownStep, DigestRec, RefsInduction -> cited lemmas
+\*   DeepestKnownStep, MemoRec, RefsInduction -> cited lemmas
 \*   TLAPS -> proof-only
-EXTENDS RecursiveWellFormed, DeepestKnownStep, DigestRec, RefsInduction
+EXTENDS RecursiveWellFormed, DeepestKnownStep, MemoRec, RefsInduction
 LOCAL INSTANCE TLAPS
 
 \* Every message satisfies the deepestknown structural invariant:
@@ -18,11 +18,11 @@ LEMMA DeepestKnownInv ==
       PROVE DeepestKnownInvariant(x)
     OBVIOUS
   <2>1. Refs(x) \subseteq TranExclusive(x)  BY DEF Refs
-  <2>2. DeepestKnownCorrect(x, DeepestKnownAssemble({Digest(p) : p \in Refs(x)}))
+  <2>2. DeepestKnownCorrect(x, DeepestKnownAssemble({Memo(p) : p \in Refs(x)}))
     BY <2>1, DeepestKnownStep
-  <2>3. Digest(x) = DigestR(x, {Digest(p) : p \in Refs(x)})  BY DigestRec
-  <2>4. DeepestKnown(x) = DeepestKnownAssemble({Digest(p) : p \in Refs(x)})
-    BY <2>3 DEF DeepestKnown, DigestR
+  <2>3. Memo(x) = MemoR(x, {Memo(p) : p \in Refs(x)})  BY MemoRec
+  <2>4. DeepestKnown(x) = DeepestKnownAssemble({Memo(p) : p \in Refs(x)})
+    BY <2>3 DEF DeepestKnown, MemoR
   <2>5. DeepestKnownCorrect(x, DeepestKnown(x))  BY <2>2, <2>4
   <2> QED BY <2>5 DEF DeepestKnownInvariant, DeepestKnownCorrect
 <1> QED BY <1>cl, RefsInduction

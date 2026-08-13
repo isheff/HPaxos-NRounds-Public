@@ -3,7 +3,7 @@
 \* is CorrectU for a message set UU has entries maximal among same-signed
 \* members -- an entry sitting strictly below a same-signed member y would
 \* contradict y's own field invariant (the chain through y is one longer).
-EXTENDS DigestUDefs, DeepestKnownInv, TranSubMessages
+EXTENDS MemoUDefs, DeepestKnownInv, TranSubMessages
 LOCAL INSTANCE TLAPS
 
 LEMMA DeepestKnownMaximalU ==

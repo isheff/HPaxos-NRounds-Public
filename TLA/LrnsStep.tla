@@ -1,15 +1,15 @@
 ------------------------------ MODULE LrnsStep ------------------------------
-\*   DigestRec, BalRec, AttesterInherit, HasDepthDef, HasDepthDownward,
+\*   MemoRec, BalRec, AttesterInherit, HasDepthDef, HasDepthDownward,
 \*   QuorumsHaveMembers, TranExclusiveRefs, TranSubMessages, BMonotone,
 \*   BBallot, MaxProps -> cited lemmas
 \*   FiniteSetTheorems -> FS_Subset, FS_Image
 \*   TLAPS -> SMT; proof-only
-EXTENDS RecursiveWellFormed, DigestRec, BalStep, BalRec, AttesterInherit,
+EXTENDS RecursiveWellFormed, MemoRec, BalStep, BalRec, AttesterInherit,
         HasDepthDef, HasDepthDownward, QuorumsHaveMembers, TranExclusiveCover,
         TranSubMessages, BMonotone, BBallot, MaxProps, FiniteSetTheorems
 LOCAL INSTANCE TLAPS
 
-\* The step for the lrns part of DigestInv: given the refs' accumulators,
+\* The step for the lrns part of MemoInv: given the refs' accumulators,
 \* the assembled lrns is exactly Lrns(x) = {alpha : HasDepth(alpha, x, 1)}.
 \* Frontier >= 1: acceptor-signedness suffices (inherit the frontier
 \* attester's quorum, then step down to level 1). Frontier 0: exactly the
@@ -21,14 +21,14 @@ LEMMA LrnsStep ==
          NEW x \in Messages,
          NEW S, Refs(x) \subseteq S, S \subseteq TranExclusive(x),
          \A p \in S : MaxQDepthInvariant(p)
-  PROVE LrnsAssemble(x, {Digest(p) : p \in S}) = Lrns(x)
+  PROVE LrnsAssemble(x, {Memo(p) : p \in S}) = Lrns(x)
 <1>tok. TypeOKMessageInterface  BY DEF MessageInterfaceAssumptions
 <1>tf. TranFinite  BY DEF MessageInterfaceAssumptions
 <1>tt. TranTrans  BY DEF MessageInterfaceAssumptions
 <1>ta. TranAcyclic  BY DEF MessageInterfaceAssumptions
 <1>anp. AlwaysAProposal  BY DEF MessageInterfaceAssumptions
 <1> DEFINE R == S
-<1> DEFINE recs == {Digest(p) : p \in R}
+<1> DEFINE recs == {Memo(p) : p \in R}
 <1>ih. \A p \in R : MaxQDepthInvariant(p)  OBVIOUS
 <1>rsub. R \subseteq TranExclusive(x)  OBVIOUS
 <1>rM. R \subseteq Messages
@@ -37,35 +37,35 @@ LEMMA LrnsStep ==
   BY <1>tok, <1>tf, <1>tt, <1>ta, TranExclusiveCover
 <1>texP. \A p \in R : Tran(p) \subseteq TranExclusive(x)  BY <1>tex
 <1>pTE. \A p \in R : p \in TranExclusive(x)  BY <1>rsub
-<1>idp. \A p \in R : /\ Digest(p).id = p
-                     /\ Digest(p).bal = B(p)
-                     /\ Digest(p).maxqdepth = DigestMaxQDepth(p)
-                     /\ Digest(p).pendingqd = DigestPendingQd(p)
+<1>idp. \A p \in R : /\ Memo(p).id = p
+                     /\ Memo(p).bal = B(p)
+                     /\ Memo(p).maxqdepth = MemoMaxQDepth(p)
+                     /\ Memo(p).pendingqd = MemoPendingQd(p)
   <2> SUFFICES ASSUME NEW p \in R
-      PROVE /\ Digest(p).id = p
-            /\ Digest(p).bal = B(p)
-            /\ Digest(p).maxqdepth = DigestMaxQDepth(p)
-            /\ Digest(p).pendingqd = DigestPendingQd(p)
+      PROVE /\ Memo(p).id = p
+            /\ Memo(p).bal = B(p)
+            /\ Memo(p).maxqdepth = MemoMaxQDepth(p)
+            /\ Memo(p).pendingqd = MemoPendingQd(p)
     OBVIOUS
   <2>1. p \in Messages  BY <1>rM
-  <2>2. Digest(p) = DigestR(p, {Digest(q) : q \in Refs(p)})
-    BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, DigestRec
-  <2>3. DigestBal(p) = B(p)
+  <2>2. Memo(p) = MemoR(p, {Memo(q) : q \in Refs(p)})
+    BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, MemoRec
+  <2>3. MemoBal(p) = B(p)
     BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, BalRec
   <2> QED BY <2>2, <2>3
-    DEF DigestR, DigestBal, DigestMaxQDepth, DigestPendingQd
+    DEF MemoR, MemoBal, MemoMaxQDepth, MemoPendingQd
 <1>bal. BalAssemble(x, recs) = B(x)
-  <2>1. \A p \in R : DigestBal(p) = B(p)
+  <2>1. \A p \in R : MemoBal(p) = B(p)
     BY <1>rM, <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, BalRec
   <2> QED BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, BalStep
-<1>sbref. \A p \in R : (Digest(p) \in SBRefs(x, recs)) <=> (B(p) = B(x))
+<1>sbref. \A p \in R : (Memo(p) \in SBRefs(x, recs)) <=> (B(p) = B(x))
   BY <1>idp, <1>bal DEF SBRefs
-<1>sbpick. \A rc \in SBRefs(x, recs) : \E p \in R : rc = Digest(p) /\ B(p) = B(x)
+<1>sbpick. \A rc \in SBRefs(x, recs) : \E p \in R : rc = Memo(p) /\ B(p) = B(x)
   <2> SUFFICES ASSUME NEW rc \in SBRefs(x, recs)
-      PROVE \E p \in R : rc = Digest(p) /\ B(p) = B(x)
+      PROVE \E p \in R : rc = Memo(p) /\ B(p) = B(x)
     OBVIOUS
   <2>1. rc \in recs /\ rc.bal = BalAssemble(x, recs)  BY DEF SBRefs
-  <2>2. PICK p \in R : rc = Digest(p)  BY <2>1
+  <2>2. PICK p \in R : rc = Memo(p)  BY <2>1
   <2> QED BY <2>1, <2>2, <1>idp, <1>bal
 <1>tnat. \A y \in Tran(x) : B(y) \in Nat
   <2> SUFFICES ASSUME NEW y \in Tran(x) PROVE B(y) \in Nat  OBVIOUS
@@ -105,8 +105,8 @@ LEMMA LrnsStep ==
     <3>1. CASE al \in QDom(x, recs)
       <4>1. PICK rc \in SBRefs(x, recs) : al \in DOMAIN rc.maxqdepth
         BY <3>1 DEF QDom
-      <4>2. PICK p \in R : rc = Digest(p) /\ B(p) = B(x)  BY <4>1, <1>sbpick
-      <4>3. al \in DOMAIN DigestMaxQDepth(p)  BY <4>1, <4>2, <1>idp
+      <4>2. PICK p \in R : rc = Memo(p) /\ B(p) = B(x)  BY <4>1, <1>sbpick
+      <4>3. al \in DOMAIN MemoMaxQDepth(p)  BY <4>1, <4>2, <1>idp
       <4>4. \E y \in Tran(p) : B(y) = B(p) /\ \E d \in Nat : HasDepth(al, y, d)
         BY <4>2, <4>3, <1>ih DEF MaxQDepthInvariant
       <4>5. PICK y \in Tran(p) : B(y) = B(p) /\ \E d \in Nat : HasDepth(al, y, d)
@@ -127,10 +127,10 @@ LEMMA LrnsStep ==
                       \E yy \in Tran(p) :
                         B(yy) = B(p) /\ \E d \in Nat : HasDepth(a2, yy, d)}
         BY <4>y, <4>p
-      <4>2. al \in DOMAIN DigestMaxQDepth(p)
+      <4>2. al \in DOMAIN MemoMaxQDepth(p)
         BY <4>1, <4>p, <1>ih DEF MaxQDepthInvariant
-      <4>3. Digest(p) \in SBRefs(x, recs)  BY <4>p, <1>sbref
-      <4>4. al \in DOMAIN Digest(p).maxqdepth  BY <4>2, <1>idp
+      <4>3. Memo(p) \in SBRefs(x, recs)  BY <4>p, <1>sbref
+      <4>4. al \in DOMAIN Memo(p).maxqdepth  BY <4>2, <1>idp
       <4> QED BY <4>3, <4>4 DEF QDom
     <3> QED BY <3>1
   <2> QED BY <2>fwd, <2>bwd
@@ -161,9 +161,9 @@ LEMMA LrnsStep ==
       <4>1. PICK rc \in {y \in SBRefs(x, recs) : al \in DOMAIN y.maxqdepth} :
               v = QDepthCand(al, rc)
         BY DEF QDepthCands
-      <4>2. PICK p \in R : rc = Digest(p) /\ B(p) = B(x)  BY <4>1, <1>sbpick
-      <4>3. al \in DOMAIN DigestMaxQDepth(p)  BY <4>1, <4>2, <1>idp
-      <4>4. v = DigestMaxQDepth(p)[al]  BY <4>1, <4>2, <1>idp DEF QDepthCand
+      <4>2. PICK p \in R : rc = Memo(p) /\ B(p) = B(x)  BY <4>1, <1>sbpick
+      <4>3. al \in DOMAIN MemoMaxQDepth(p)  BY <4>1, <4>2, <1>idp
+      <4>4. v = MemoMaxQDepth(p)[al]  BY <4>1, <4>2, <1>idp DEF QDepthCand
       <4> QED BY <4>3, <4>4, <4>2, <1>ih DEF MaxQDepthInvariant
     <3>cfin. IsFiniteSet(QDepthCands(al, x, recs))
       <4>ftx. IsFiniteSet(Tran(x))  BY <1>tf DEF TranFinite
@@ -179,17 +179,17 @@ LEMMA LrnsStep ==
            /\ \A v \in QDepthCands(al, x, recs) : RefFrontier(al, x, recs) >= v
       BY <3>cne, <3>cnat, <3>cfin, MaxProps DEF RefFrontier
     <3>D0nat. RefFrontier(al, x, recs) \in Nat  BY <3>D0, <3>cnat
-    <3>pcand. \A p \in R : (B(p) = B(x) /\ al \in DOMAIN DigestMaxQDepth(p)) =>
-                DigestMaxQDepth(p)[al] \in QDepthCands(al, x, recs)
+    <3>pcand. \A p \in R : (B(p) = B(x) /\ al \in DOMAIN MemoMaxQDepth(p)) =>
+                MemoMaxQDepth(p)[al] \in QDepthCands(al, x, recs)
       <4> SUFFICES ASSUME NEW p \in R, B(p) = B(x),
-                          al \in DOMAIN DigestMaxQDepth(p)
-          PROVE DigestMaxQDepth(p)[al] \in QDepthCands(al, x, recs)
+                          al \in DOMAIN MemoMaxQDepth(p)
+          PROVE MemoMaxQDepth(p)[al] \in QDepthCands(al, x, recs)
         OBVIOUS
-      <4>1. Digest(p) \in SBRefs(x, recs)  BY <1>sbref
-      <4>2. al \in DOMAIN Digest(p).maxqdepth  BY <1>idp
-      <4>3. Digest(p) \in {y \in SBRefs(x, recs) : al \in DOMAIN y.maxqdepth}
+      <4>1. Memo(p) \in SBRefs(x, recs)  BY <1>sbref
+      <4>2. al \in DOMAIN Memo(p).maxqdepth  BY <1>idp
+      <4>3. Memo(p) \in {y \in SBRefs(x, recs) : al \in DOMAIN y.maxqdepth}
         BY <4>1, <4>2
-      <4>4. QDepthCand(al, Digest(p)) = DigestMaxQDepth(p)[al]
+      <4>4. QDepthCand(al, Memo(p)) = MemoMaxQDepth(p)[al]
         BY <1>idp DEF QDepthCand
       <4> QED BY <4>3, <4>4 DEF QDepthCands
     <3>att0. \E y \in TranExclusive(x) :
@@ -197,15 +197,15 @@ LEMMA LrnsStep ==
       <4>1. PICK rc \in {y \in SBRefs(x, recs) : al \in DOMAIN y.maxqdepth} :
               RefFrontier(al, x, recs) = QDepthCand(al, rc)
         BY <3>D0 DEF QDepthCands
-      <4>2. PICK p \in R : rc = Digest(p) /\ B(p) = B(x)  BY <4>1, <1>sbpick
-      <4>3. al \in DOMAIN DigestMaxQDepth(p)  BY <4>1, <4>2, <1>idp
-      <4>4. RefFrontier(al, x, recs) = DigestMaxQDepth(p)[al]
+      <4>2. PICK p \in R : rc = Memo(p) /\ B(p) = B(x)  BY <4>1, <1>sbpick
+      <4>3. al \in DOMAIN MemoMaxQDepth(p)  BY <4>1, <4>2, <1>idp
+      <4>4. RefFrontier(al, x, recs) = MemoMaxQDepth(p)[al]
         BY <4>1, <4>2, <1>idp DEF QDepthCand
       <4>5. \E y \in Tran(p) :
-              B(y) = B(p) /\ HasDepth(al, y, DigestMaxQDepth(p)[al])
+              B(y) = B(p) /\ HasDepth(al, y, MemoMaxQDepth(p)[al])
         BY <4>2, <4>3, <1>ih DEF MaxQDepthInvariant
       <4>6. PICK y \in Tran(p) :
-              B(y) = B(p) /\ HasDepth(al, y, DigestMaxQDepth(p)[al])
+              B(y) = B(p) /\ HasDepth(al, y, MemoMaxQDepth(p)[al])
         BY <4>5
       <4> QED BY <4>2, <4>4, <4>6, <1>texP
     <3>P0. RefPending(al, x, recs)
@@ -224,15 +224,15 @@ LEMMA LrnsStep ==
                              /\ z.maxqdepth[al] = RefFrontier(al, x, recs)} :
                 y \in RefPendingPart(al, rc)
           BY DEF RefPending
-        <5>2. PICK p \in R : rc = Digest(p) /\ B(p) = B(x)  BY <5>1, <1>sbpick
-        <5>3. al \in DOMAIN DigestMaxQDepth(p)
-                /\ DigestMaxQDepth(p)[al] = RefFrontier(al, x, recs)
+        <5>2. PICK p \in R : rc = Memo(p) /\ B(p) = B(x)  BY <5>1, <1>sbpick
+        <5>3. al \in DOMAIN MemoMaxQDepth(p)
+                /\ MemoMaxQDepth(p)[al] = RefFrontier(al, x, recs)
           BY <5>1, <5>2, <1>idp
-        <5>4. y \in DigestPendingQd(p)[al]
+        <5>4. y \in MemoPendingQd(p)[al]
           BY <5>1, <5>2, <1>idp DEF RefPendingPart
-        <5>5. DigestPendingQd(p)[al]
+        <5>5. MemoPendingQd(p)[al]
                 = {yy \in Tran(p) :
-                     B(yy) = B(p) /\ HasDepth(al, yy, DigestMaxQDepth(p)[al])}
+                     B(yy) = B(p) /\ HasDepth(al, yy, MemoMaxQDepth(p)[al])}
           BY <5>2, <5>3, <1>ih DEF MaxQDepthInvariant
         <5>6. y \in Tran(p) /\ B(y) = B(p)
                 /\ HasDepth(al, y, RefFrontier(al, x, recs))
@@ -246,34 +246,34 @@ LEMMA LrnsStep ==
             PROVE y \in RefPending(al, x, recs)
           OBVIOUS
         <5>p. PICK p \in R : B(p) = B(x) /\ y \in Tran(p)  BY <1>same
-        <5>dom. al \in DOMAIN DigestMaxQDepth(p)
+        <5>dom. al \in DOMAIN MemoMaxQDepth(p)
           <6>1. al \in {a2 \in Learners :
                           \E yy \in Tran(p) :
                             B(yy) = B(p) /\ \E dd \in Nat : HasDepth(a2, yy, dd)}
             BY <5>p, <3>D0nat
           <6> QED BY <6>1, <5>p, <1>ih DEF MaxQDepthInvariant
-        <5>ge. RefFrontier(al, x, recs) <= DigestMaxQDepth(p)[al]
+        <5>ge. RefFrontier(al, x, recs) <= MemoMaxQDepth(p)[al]
           BY <5>p, <5>dom, <3>D0nat, <1>ih DEF MaxQDepthInvariant
-        <5>le. DigestMaxQDepth(p)[al] <= RefFrontier(al, x, recs)
-          <6>1. DigestMaxQDepth(p)[al] \in QDepthCands(al, x, recs)
+        <5>le. MemoMaxQDepth(p)[al] <= RefFrontier(al, x, recs)
+          <6>1. MemoMaxQDepth(p)[al] \in QDepthCands(al, x, recs)
             BY <5>p, <5>dom, <3>pcand
           <6> QED BY <6>1, <3>D0
-        <5>nat. DigestMaxQDepth(p)[al] \in Nat
+        <5>nat. MemoMaxQDepth(p)[al] \in Nat
           BY <5>p, <5>dom, <1>ih DEF MaxQDepthInvariant
-        <5>eq. DigestMaxQDepth(p)[al] = RefFrontier(al, x, recs)
+        <5>eq. MemoMaxQDepth(p)[al] = RefFrontier(al, x, recs)
           BY <5>ge, <5>le, <5>nat, <3>D0nat, SMT
-        <5>mem. y \in DigestPendingQd(p)[al]
-          <6>1. DigestPendingQd(p)[al]
+        <5>mem. y \in MemoPendingQd(p)[al]
+          <6>1. MemoPendingQd(p)[al]
                   = {yy \in Tran(p) :
-                       B(yy) = B(p) /\ HasDepth(al, yy, DigestMaxQDepth(p)[al])}
+                       B(yy) = B(p) /\ HasDepth(al, yy, MemoMaxQDepth(p)[al])}
             BY <5>p, <5>dom, <1>ih DEF MaxQDepthInvariant
           <6> QED BY <6>1, <5>p, <5>eq
-        <5>flt. Digest(p) \in {z \in SBRefs(x, recs) :
+        <5>flt. Memo(p) \in {z \in SBRefs(x, recs) :
                                  /\ al \in DOMAIN z.maxqdepth
                                  /\ z.maxqdepth[al] = RefFrontier(al, x, recs)}
-          <6>1. Digest(p) \in SBRefs(x, recs)  BY <5>p, <1>sbref
+          <6>1. Memo(p) \in SBRefs(x, recs)  BY <5>p, <1>sbref
           <6> QED BY <6>1, <5>dom, <5>eq, <1>idp
-        <5>part. y \in RefPendingPart(al, Digest(p))
+        <5>part. y \in RefPendingPart(al, Memo(p))
           BY <5>mem, <1>idp DEF RefPendingPart
         <5> QED BY <5>flt, <5>part DEF RefPending
       <4> QED BY <4>sub, <4>sup

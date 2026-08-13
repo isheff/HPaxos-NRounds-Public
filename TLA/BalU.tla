@@ -1,6 +1,6 @@
 --------------------------------- MODULE BalU ---------------------------------
 \* Plan step (c) toward CWellFormedRec: the candidate's concrete ballot CB is
-\* exactly the digest-assembled WFRBal over its priors' digests, via a Max
+\* exactly the memo-assembled WFRBal over its priors' memos, via a Max
 \* decomposition -- the per-prior proposal-ballot maxima are the priors' CBs
 \* (attained and dominating, CBAttained), so the big Max over all proposals in
 \* CTran(cand) collapses to the Max over {CB(p)} plus the candidate's own
@@ -18,13 +18,13 @@ LEMMA BalU ==
          NEW pr, pr \subseteq CMessages, IsFiniteSet(pr),
          pl \in CProposal \/ pr # {}
   PROVE LET cand == [sender |-> sdr, payload |-> pl, priors |-> pr]
-            r    == {Digest(p) : p \in pr}
+            r    == {Memo(p) : p \in pr}
         IN  /\ CB(cand) = WFRBal(pl, r)
             /\ CB(cand) \in Nat
             /\ \A p \in pr : CB(p) <= CB(cand)
             /\ \A p \in pr : \A y \in CTran(p) : CB(y) <= CB(cand)
 <1> DEFINE cand  == [sender |-> sdr, payload |-> pl, priors |-> pr]
-<1> DEFINE r     == {Digest(p) : p \in pr}
+<1> DEFINE r     == {Memo(p) : p \in pr}
 <1> DEFINE U     == UNION {CTran(p) : p \in pr}
 <1> DEFINE OwnC  == IF pl \in CProposal THEN {pl.ballot} ELSE {}
 <1> DEFINE CBals == {CB(p) : p \in pr}
@@ -42,20 +42,20 @@ LEMMA BalU ==
   BY CBAttained
 <1>usub. \A p \in pr : CTran(p) \subseteq U  OBVIOUS
 <1>bals. {rc.bal : rc \in r} = CBals
-  <2>eq. \A p \in pr : Digest(p).bal = CB(p)
-    <3> SUFFICES ASSUME NEW p \in pr PROVE Digest(p).bal = CB(p)  OBVIOUS
+  <2>eq. \A p \in pr : Memo(p).bal = CB(p)
+    <3> SUFFICES ASSUME NEW p \in pr PROVE Memo(p).bal = CB(p)  OBVIOUS
     <3>1. p \in Messages  BY CFields
-    <3>2. DigestBal(p) = B(p)  BY <3>1, BalRec
+    <3>2. MemoBal(p) = B(p)  BY <3>1, BalRec
     <3>3. B(p) = CB(p)  BY CBResolve
-    <3> QED BY <3>2, <3>3 DEF DigestBal
+    <3> QED BY <3>2, <3>3 DEF MemoBal
   <2>sub. {rc.bal : rc \in r} \subseteq CBals
     <3> SUFFICES ASSUME NEW rc \in r PROVE rc.bal \in CBals  OBVIOUS
-    <3>1. PICK p \in pr : rc = Digest(p)  OBVIOUS
+    <3>1. PICK p \in pr : rc = Memo(p)  OBVIOUS
     <3> QED BY <3>1, <2>eq
   <2>sup. CBals \subseteq {rc.bal : rc \in r}
     <3> SUFFICES ASSUME NEW p \in pr PROVE CB(p) \in {rc.bal : rc \in r}
       OBVIOUS
-    <3>1. Digest(p) \in r  OBVIOUS
+    <3>1. Memo(p) \in r  OBVIOUS
     <3> QED BY <3>1, <2>eq
   <2> QED BY <2>sub, <2>sup
 <1>cprop. CIsProposal(cand) <=> pl \in CProposal

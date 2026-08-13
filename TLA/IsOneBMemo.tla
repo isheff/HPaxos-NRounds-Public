@@ -1,48 +1,48 @@
----------------------------- MODULE IsOneBDigest ----------------------------
-\*   DigestRec, BalRec, NewBalRec, IsOneBRec, TranSubMessages -> cited
+---------------------------- MODULE IsOneBMemo ----------------------------
+\*   MemoRec, BalRec, NewBalRec, IsOneBRec, TranSubMessages -> cited
 \*   TLAPS -> proof-only
-EXTENDS RecursiveWellFormed, DigestRec, BalRec, NewBalRec, IsOneBRec,
+EXTENDS RecursiveWellFormed, MemoRec, BalRec, NewBalRec, IsOneBRec,
         TranSubMessages
 LOCAL INSTANCE TLAPS
 
 \* The isoneb flag is exactly IsOneB, by matching IsOneBAssemble's
-\* digest-level conditions with IsOneBRec's refs-local characterization.
-LEMMA IsOneBDigest ==
+\* memo-level conditions with IsOneBRec's refs-local characterization.
+LEMMA IsOneBMemo ==
   ASSUME MessageInterfaceAssumptions, NEW m \in Messages
-  PROVE DigestIsOneB(m) <=> IsOneB(m)
+  PROVE MemoIsOneB(m) <=> IsOneB(m)
 <1>tok. TypeOKMessageInterface  BY DEF MessageInterfaceAssumptions
 <1>tf. TranFinite  BY DEF MessageInterfaceAssumptions
 <1>tt. TranTrans  BY DEF MessageInterfaceAssumptions
 <1>ta. TranAcyclic  BY DEF MessageInterfaceAssumptions
 <1>anp. AlwaysAProposal  BY DEF MessageInterfaceAssumptions
-<1> DEFINE recs == {Digest(p) : p \in Refs(m)}
-<1>unf. Digest(m) = DigestR(m, recs)
-  BY <1>tok, <1>tt, <1>tf, <1>ta, DigestRec
-<1>io. DigestIsOneB(m) <=> IsOneBAssemble(m, recs)
-  BY <1>unf DEF DigestIsOneB, DigestR
+<1> DEFINE recs == {Memo(p) : p \in Refs(m)}
+<1>unf. Memo(m) = MemoR(m, recs)
+  BY <1>tok, <1>tt, <1>tf, <1>ta, MemoRec
+<1>io. MemoIsOneB(m) <=> IsOneBAssemble(m, recs)
+  BY <1>unf DEF MemoIsOneB, MemoR
 <1>bal. BalAssemble(m, recs) = B(m)
-  <2>1. BalAssemble(m, recs) = DigestBal(m)  BY <1>unf DEF DigestBal, DigestR
+  <2>1. BalAssemble(m, recs) = MemoBal(m)  BY <1>unf DEF MemoBal, MemoR
   <2> QED BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, BalRec
 <1>rM. Refs(m) \subseteq Messages
   <2>1. Refs(m) \subseteq TranExclusive(m)  BY DEF Refs
   <2> QED BY <2>1, <1>tok, <1>tt, TranSubMessages DEF TranExclusive
-<1>idp. \A p \in Refs(m) : Digest(p).id = p /\ Digest(p).bal = B(p)
+<1>idp. \A p \in Refs(m) : Memo(p).id = p /\ Memo(p).bal = B(p)
   <2> SUFFICES ASSUME NEW p \in Refs(m)
-      PROVE Digest(p).id = p /\ Digest(p).bal = B(p)  OBVIOUS
+      PROVE Memo(p).id = p /\ Memo(p).bal = B(p)  OBVIOUS
   <2>1. p \in Messages  BY <1>rM
-  <2>2. Digest(p) = DigestR(p, {Digest(q) : q \in Refs(p)})
-    BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, DigestRec
-  <2>3. DigestBal(p) = B(p)
+  <2>2. Memo(p) = MemoR(p, {Memo(q) : q \in Refs(p)})
+    BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, MemoRec
+  <2>3. MemoBal(p) = B(p)
     BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, BalRec
-  <2> QED BY <2>2, <2>3 DEF DigestR, DigestBal
+  <2> QED BY <2>2, <2>3 DEF MemoR, MemoBal
 <1>nbp. \A p \in Refs(m) :
-          Digest(p).newbal <=> (\A y \in Refs(p) : B(y) < B(p))
+          Memo(p).newbal <=> (\A y \in Refs(p) : B(y) < B(p))
   <2> SUFFICES ASSUME NEW p \in Refs(m)
-      PROVE Digest(p).newbal <=> (\A y \in Refs(p) : B(y) < B(p))  OBVIOUS
+      PROVE Memo(p).newbal <=> (\A y \in Refs(p) : B(y) < B(p))  OBVIOUS
   <2>1. p \in Messages  BY <1>rM
-  <2>2. DigestNewBal(p) <=> (\A y \in Refs(p) : B(y) < B(p))
+  <2>2. MemoNewBal(p) <=> (\A y \in Refs(p) : B(y) < B(p))
     BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, NewBalRec
-  <2> QED BY <2>2 DEF DigestNewBal
+  <2> QED BY <2>2 DEF MemoNewBal
 <1>selfref. \A p \in Refs(m) : p \notin Refs(p)
   <2> SUFFICES ASSUME NEW p \in Refs(m), p \in Refs(p) PROVE FALSE  OBVIOUS
   <2>1. p \in TranExclusive(p)  BY DEF Refs
@@ -62,16 +62,16 @@ LEMMA IsOneBDigest ==
              /\ rc.newbal
              /\ \A rc2 \in recs : rc2 = rc \/ rc2.bal < BalAssemble(m, recs)
       BY <2>1 DEF IsOneBAssemble
-    <3>p. PICK p \in Refs(m) : rc = Digest(p)  OBVIOUS
+    <3>p. PICK p \in Refs(m) : rc = Memo(p)  OBVIOUS
     <3>prop. IsProposal(p)  BY <3>rc, <3>p, <1>idp
     <3>pb. B(p) = B(m)  BY <3>rc, <3>p, <1>idp, <1>bal
     <3>pref. \A y \in Refs(p) : B(y) < B(p)  BY <3>rc, <3>p, <1>nbp
     <3>oth. \A q \in Refs(m) : q = p \/ B(q) < B(m)
       <4> SUFFICES ASSUME NEW q \in Refs(m), q # p PROVE B(q) < B(m)
         OBVIOUS
-      <4>1. Digest(q) \in recs  OBVIOUS
-      <4>2. Digest(q) # rc  BY <3>p, <1>idp
-      <4>3. Digest(q).bal < BalAssemble(m, recs)  BY <3>rc, <4>1, <4>2
+      <4>1. Memo(q) \in recs  OBVIOUS
+      <4>2. Memo(q) # rc  BY <3>p, <1>idp
+      <4>3. Memo(q).bal < BalAssemble(m, recs)  BY <3>rc, <4>1, <4>2
       <4> QED BY <4>3, <1>idp, <1>bal
     <3>all. \A y \in (Refs(m) \cup Refs(p)) \ {p} : B(y) < B(m)
       <4> SUFFICES ASSUME NEW y \in (Refs(m) \cup Refs(p)) \ {p}
@@ -92,20 +92,20 @@ LEMMA IsOneBDigest ==
             /\ \A y \in (Refs(m) \cup Refs(p)) \ {p} : B(y) < B(m)
       BY <2>1, <1>rec
     <3>np. ~IsProposal(m)  BY <2>1, <1>rec
-    <3>rc. Digest(p) \in recs  OBVIOUS
-    <3>c1. IsProposal(Digest(p).id)  BY <3>p, <1>idp
-    <3>c2. Digest(p).bal = BalAssemble(m, recs)  BY <3>p, <1>idp, <1>bal
-    <3>c3. Digest(p).newbal
+    <3>rc. Memo(p) \in recs  OBVIOUS
+    <3>c1. IsProposal(Memo(p).id)  BY <3>p, <1>idp
+    <3>c2. Memo(p).bal = BalAssemble(m, recs)  BY <3>p, <1>idp, <1>bal
+    <3>c3. Memo(p).newbal
       <4>1. \A y \in Refs(p) : B(y) < B(p)
         <5> SUFFICES ASSUME NEW y \in Refs(p) PROVE B(y) < B(p)  OBVIOUS
         <5>1. y # p  BY <1>selfref
         <5>2. y \in (Refs(m) \cup Refs(p)) \ {p}  BY <5>1
         <5> QED BY <5>2, <3>p
       <4> QED BY <4>1, <1>nbp
-    <3>c4. \A rc2 \in recs : rc2 = Digest(p) \/ rc2.bal < BalAssemble(m, recs)
-      <4> SUFFICES ASSUME NEW rc2 \in recs, rc2 # Digest(p)
+    <3>c4. \A rc2 \in recs : rc2 = Memo(p) \/ rc2.bal < BalAssemble(m, recs)
+      <4> SUFFICES ASSUME NEW rc2 \in recs, rc2 # Memo(p)
           PROVE rc2.bal < BalAssemble(m, recs)  OBVIOUS
-      <4>1. PICK q \in Refs(m) : rc2 = Digest(q)  OBVIOUS
+      <4>1. PICK q \in Refs(m) : rc2 = Memo(q)  OBVIOUS
       <4>2. q # p  BY <4>1
       <4>3. q \in (Refs(m) \cup Refs(p)) \ {p}  BY <4>2
       <4>4. B(q) < B(m)  BY <4>3, <3>p

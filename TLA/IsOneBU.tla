@@ -1,12 +1,12 @@
 -------------------------------- MODULE IsOneBU --------------------------------
-\* Plan step (d) toward CWellFormedRec: the digest-based WFRIsOneB check on the
+\* Plan step (d) toward CWellFormedRec: the memo-based WFRIsOneB check on the
 \* candidate's priors decides CIsOneB of the candidate record.  Candidate analog
 \* of IsOneBAssembleCover: the count-2 set {z \in CTran(cand) : CB(z) =
 \* CB(cand)} is exactly {cand, p*} for a witness proposal PRIOR p* -- the
 \* "all other priors strictly lower" clause forces the witness maximal, and a
 \* same-ballot proposal buried under a prior would surface as a third member.
 EXTENDS WellFormedRecDef, BalU, CBMonotone, CBTypeNat, CBAchievedByProposal,
-        CPropBalWF, CSelfInTran, DigestRec, NewBalRec, TranExclusiveRefs,
+        CPropBalWF, CSelfInTran, MemoRec, NewBalRec, TranExclusiveRefs,
         TranSubMessages
 LOCAL INSTANCE TLAPS
 
@@ -16,7 +16,7 @@ LEMMA IsOneBU ==
          NEW pr, pr \subseteq CMessages, IsFiniteSet(pr),
          pl \in CProposal \/ pr # {}
   PROVE LET cand == [sender |-> sdr, payload |-> pl, priors |-> pr]
-            r    == {Digest(p) : p \in pr}
+            r    == {Memo(p) : p \in pr}
         IN  CIsOneB(cand) <=> WFRIsOneB(pl, r)
 <1>tok. TypeOKMessageInterface  BY DEF MessageInterfaceAssumptions
 <1>tf. TranFinite  BY DEF MessageInterfaceAssumptions
@@ -24,7 +24,7 @@ LEMMA IsOneBU ==
 <1>ta. TranAcyclic  BY DEF MessageInterfaceAssumptions
 <1>anp. AlwaysAProposal  BY DEF MessageInterfaceAssumptions
 <1> DEFINE cand  == [sender |-> sdr, payload |-> pl, priors |-> pr]
-<1> DEFINE r     == {Digest(p) : p \in pr}
+<1> DEFINE r     == {Memo(p) : p \in pr}
 <1> DEFINE U     == UNION {CTran(p) : p \in pr}
 <1> DEFINE T     == {z \in CTran(cand) : CB(z) = CB(cand)}
 <1> DEFINE CBals == {CB(p) : p \in pr}
@@ -37,24 +37,24 @@ LEMMA IsOneBU ==
         /\ CB(cand) \in Nat
         /\ \A p \in pr : CB(p) <= CB(cand)
   BY <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, BalU
-<1>idbal. \A p \in pr : Digest(p).id = p /\ Digest(p).bal = CB(p)
+<1>idbal. \A p \in pr : Memo(p).id = p /\ Memo(p).bal = CB(p)
   <2> SUFFICES ASSUME NEW p \in pr
-      PROVE Digest(p).id = p /\ Digest(p).bal = CB(p)  OBVIOUS
+      PROVE Memo(p).id = p /\ Memo(p).bal = CB(p)  OBVIOUS
   <2>1. p \in Messages  BY CFields
-  <2>2. Digest(p) = DigestR(p, {Digest(q) : q \in Refs(p)})
-    BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, DigestRec
-  <2>3. Digest(p).id = p  BY <2>2 DEF DigestR
-  <2>4. DigestBal(p) = B(p)
+  <2>2. Memo(p) = MemoR(p, {Memo(q) : q \in Refs(p)})
+    BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, MemoRec
+  <2>3. Memo(p).id = p  BY <2>2 DEF MemoR
+  <2>4. MemoBal(p) = B(p)
     BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, BalRec
   <2>5. B(p) = CB(p)  BY CBResolve
-  <2> QED BY <2>3, <2>4, <2>5 DEF DigestBal
-<1>nb. \A p \in pr : Digest(p).newbal <=> (\A y \in Refs(p) : B(y) < B(p))
+  <2> QED BY <2>3, <2>4, <2>5 DEF MemoBal
+<1>nb. \A p \in pr : Memo(p).newbal <=> (\A y \in Refs(p) : B(y) < B(p))
   <2> SUFFICES ASSUME NEW p \in pr
-      PROVE Digest(p).newbal <=> (\A y \in Refs(p) : B(y) < B(p))  OBVIOUS
+      PROVE Memo(p).newbal <=> (\A y \in Refs(p) : B(y) < B(p))  OBVIOUS
   <2>1. p \in Messages  BY CFields
-  <2>2. DigestNewBal(p) <=> (\A y \in Refs(p) : B(y) < B(p))
+  <2>2. MemoNewBal(p) <=> (\A y \in Refs(p) : B(y) < B(p))
     BY <2>1, <1>tok, <1>tt, <1>tf, <1>ta, <1>anp, NewBalRec
-  <2> QED BY <2>2 DEF DigestNewBal
+  <2> QED BY <2>2 DEF MemoNewBal
 <1>prU. \A p \in pr : p \in U /\ p \in CTran(cand)
   <2> SUFFICES ASSUME NEW p \in pr PROVE p \in U /\ p \in CTran(cand)
     OBVIOUS
@@ -69,12 +69,12 @@ LEMMA IsOneBU ==
 <1>bimg. {rc.bal : rc \in r} = CBals
   <2>sub. {rc.bal : rc \in r} \subseteq CBals
     <3> SUFFICES ASSUME NEW rc \in r PROVE rc.bal \in CBals  OBVIOUS
-    <3>1. PICK p \in pr : rc = Digest(p)  OBVIOUS
+    <3>1. PICK p \in pr : rc = Memo(p)  OBVIOUS
     <3> QED BY <3>1, <1>idbal
   <2>sup. CBals \subseteq {rc.bal : rc \in r}
     <3> SUFFICES ASSUME NEW p \in pr PROVE CB(p) \in {rc.bal : rc \in r}
       OBVIOUS
-    <3>1. Digest(p) \in r  OBVIOUS
+    <3>1. Memo(p) \in r  OBVIOUS
     <3> QED BY <3>1, <1>idbal
   <2> QED BY <2>sub, <2>sup
 <1>candT. cand \in T
@@ -160,11 +160,11 @@ LEMMA IsOneBU ==
       <4>8. B(y) = CB(y) /\ B(p0) = CB(p0)  BY <4>5, CBResolve
       <4>9. CB(y) \in Nat /\ CB(p0) \in Nat  BY <4>5, CBTypeNat, <1>cbnat
       <4> QED BY <4>6, <4>7, <4>8, <4>9, SMT
-    <3>c3. Digest(p0).newbal  BY <3>nbal, <1>nb
-    <3>c4. \A rc2 \in r : rc2 = Digest(p0) \/ rc2.bal < WFRBal(pl, r)
-      <4> SUFFICES ASSUME NEW rc2 \in r, rc2 # Digest(p0)
+    <3>c3. Memo(p0).newbal  BY <3>nbal, <1>nb
+    <3>c4. \A rc2 \in r : rc2 = Memo(p0) \/ rc2.bal < WFRBal(pl, r)
+      <4> SUFFICES ASSUME NEW rc2 \in r, rc2 # Memo(p0)
           PROVE rc2.bal < WFRBal(pl, r)  OBVIOUS
-      <4>q. PICK q \in pr : rc2 = Digest(q)  OBVIOUS
+      <4>q. PICK q \in pr : rc2 = Memo(q)  OBVIOUS
       <4>qp. q # p0  BY <4>q, <1>idbal
       <4>1. CB(q) <= CB(cand)  BY <1>bal
       <4>2. CB(q) # CB(cand)
@@ -178,10 +178,10 @@ LEMMA IsOneBU ==
       <4>4. CB(q) < CB(cand)  BY <4>1, <4>2, <4>3, <1>bal, SMT
       <4> QED BY <4>q, <4>4, <1>idbal, <1>bal
     <3>fin. WFRIsOneB(pl, r)
-      <4>w. Digest(p0) \in r  OBVIOUS
-      <4>id. Digest(p0).id = p0  BY <1>idbal
-      <4>c1. CIsProposal(Digest(p0).id)  BY <4>id, <3>prop
-      <4>c2. Digest(p0).bal = WFRBal(pl, r)  BY <1>idbal, <3>p0, <1>bal
+      <4>w. Memo(p0) \in r  OBVIOUS
+      <4>id. Memo(p0).id = p0  BY <1>idbal
+      <4>c1. CIsProposal(Memo(p0).id)  BY <4>id, <3>prop
+      <4>c2. Memo(p0).bal = WFRBal(pl, r)  BY <1>idbal, <3>p0, <1>bal
       <4> QED BY <3>plp, <4>w, <4>c1, <4>c2, <3>c3, <3>c4 DEF WFRIsOneB
     <3> QED BY <3>fin
   <2> QED BY <2>1
@@ -195,7 +195,7 @@ LEMMA IsOneBU ==
              /\ rc.newbal
              /\ \A rc2 \in r : rc2 = rc \/ rc2.bal < WFRBal(pl, r)
       BY <2>1 DEF WFRIsOneB
-    <3>p. PICK p \in pr : rc = Digest(p)  OBVIOUS
+    <3>p. PICK p \in pr : rc = Memo(p)  OBVIOUS
     <3>pM. p \in Messages  BY CFields
     <3>prop. CIsProposal(p)  BY <3>rc, <3>p, <1>idbal
     <3>pbal. CB(p) = CB(cand)  BY <3>rc, <3>p, <1>idbal, <1>bal
@@ -232,9 +232,9 @@ LEMMA IsOneBU ==
         <5>8. CB(p) \in Nat  BY CBTypeNat
         <5> QED BY <4>zb, <3>pbal, <5>4, <5>5, <5>6, <5>7, <5>8, <4>znat, SMT
       <4>b. CASE q # p
-        <5>1. Digest(q) \in r  OBVIOUS
-        <5>2. Digest(q) # rc  BY <3>p, <1>idbal, <4>b
-        <5>3. Digest(q).bal < WFRBal(pl, r)  BY <3>rc, <5>1, <5>2
+        <5>1. Memo(q) \in r  OBVIOUS
+        <5>2. Memo(q) # rc  BY <3>p, <1>idbal, <4>b
+        <5>3. Memo(q).bal < WFRBal(pl, r)  BY <3>rc, <5>1, <5>2
         <5>4. CB(q) < CB(cand)  BY <5>3, <1>idbal, <1>bal
         <5>5. CB(z) <= CB(q)  BY <4>q, CBMonotone
         <5>6. CB(q) \in Nat  BY <1>cbnat

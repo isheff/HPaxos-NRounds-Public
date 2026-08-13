@@ -1,13 +1,13 @@
 ----------------------------- MODULE CWellFormedRec -----------------------------
-\* THE candidate-checking theorem: the digest-based WellFormedRec check an
-\* acceptor runs on a received candidate record -- reading ONLY the digests
+\* THE candidate-checking theorem: the memo-based WellFormedRec check an
+\* acceptor runs on a received candidate record -- reading ONLY the memos
 \* of its priors, never Tran -- is EQUIVALENT to CWellFormed of the record.
 \* Conjunct by conjunct: (1) a proposal exists in the closure iff the
 \* candidate is one or has a prior (CBAchievedByProposal at a prior); (2) the
 \* assembled caught set IS CCaught(cand) (CaughtCand); (3) proposal/OneB/TwoA
 \* via IsOneBU and LrnsU; (4) the assembled ballot IS CB(cand) (BalU).
 \* Priors-canonicality is deliberately absent on both sides: it is not
-\* digest-decidable, so CWellFormed does not demand it; safe acceptors
+\* memo-decidable, so CWellFormed does not demand it; safe acceptors
 \* maintain it as an algorithm invariant instead (CSafeSentCanonical).
 EXTENDS WellFormedRecDef, BalU, IsOneBU, LrnsU, CaughtCand,
         CBAchievedByProposal
@@ -27,7 +27,7 @@ THEOREM CWellFormedRec ==
 <1>ta. TranAcyclic  BY DEF MessageInterfaceAssumptions
 <1>anp. AlwaysAProposal  BY DEF MessageInterfaceAssumptions
 <1> DEFINE cand == [sender |-> sdr, payload |-> pl, priors |-> pr]
-<1> DEFINE r    == {Digest(p) : p \in pr}
+<1> DEFINE r    == {Memo(p) : p \in pr}
 <1> DEFINE U    == UNION {CTran(p) : p \in pr}
 <1>tr. CTran(cand) = {cand} \cup U /\ CTranExcl(cand) = U
   BY CBuiltTran
