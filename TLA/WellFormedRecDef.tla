@@ -20,6 +20,15 @@
 \* the assembling message itself.
 EXTENDS MessageConcrete, RecursiveWellFormed
 
+\* The IMPLEMENTATION's memo: recursively assembled over the PRIORS field --
+\* what an acceptor actually stores, since it never computes Refs (that
+\* would need Tran).  Memo (refs-recursive) and MemoP agree on every
+\* value-determined field (MemoPGoodInv / MemoPFields); they may differ in
+\* the CHOOSE-tie-broken witnesses inside deepestknown / highesttwoas /
+\* prevtran when a prior set is non-canonical, which no check outcome
+\* depends on.
+MemoP(x) == CRecursiveFunc(MemoR, CPriors, x)
+
 \* Ballot of the candidate: max of priors' ballots plus its own proposal
 \* ballot (mirrors BalAssemble).
 WFRBal(pl, r) ==
