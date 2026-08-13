@@ -123,7 +123,7 @@ LEMMA IsOneBU ==
     <3>Teq. T = {cand, p0}
       <4> SUFFICES ASSUME NEW z \in T, z # cand, z # p0 PROVE FALSE
         BY <1>candT, <3>p0T
-      <4> QED BY <3>p0T, <4>, <3>p0ne, <3>np, <1>T3
+      <4> QED BY <3>p0T, <3>p0ne, <3>np, <1>T3
     <3>p0M. p0 \in Messages  BY CFields
     <3>prop. CIsProposal(p0)
       <4>1. PICK w \in CTran(p0) : CIsProposal(w) /\ w.payload.ballot = CB(p0)
