@@ -2,7 +2,8 @@
 EXTENDS HPaxosPlusCal
 LOCAL INSTANCE TLAPS
 
-\* Membership bridge for RelevantMsgs, mirroring BoxMemInNet/BMNop.
+\* Membership bridge for RelevantMsgs (replaced the Msgs-source BoxMemInNet/
+\* BMNop, orphaned by the weakening and removed).
 LEMMA BoxMemInRel == ASSUME NEW m, NEW x, x \in m PROVE BMNRop(m, x)
 <1> USE DEF BMNRop
 <1>1. Init => (m \subseteq RelevantMsgs => x \in RelevantMsgs)  OBVIOUS

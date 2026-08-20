@@ -335,7 +335,6 @@ NBop(xx)     == Spec => [](({xx} \subseteq Msgs) <=> (xx \in Msgs))
 BKEop(p, a)  == Spec => [](p[2] \in known_messages[p[1]] <=> p[2] \in known_messages[a])
 
 \* Product-set equivalence (explicit tuple reasoning; SMT/auto fail on it).
-BMNop(m, x)  == Spec => [](m \subseteq Msgs => x \in Msgs)
 ELtgt(m)     == \A a \in LiveAcceptors : m \subseteq known_messages[a]
 BTLop(m)     == Spec => [](CP_Tgt(LiveAcceptors \X m) <=> ELtgt(m))
 
