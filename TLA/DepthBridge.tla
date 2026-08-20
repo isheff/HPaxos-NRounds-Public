@@ -1,11 +1,17 @@
------------------------------ MODULE DepthBridge -----------------------------
-EXTENDS HPaxosPlusCal, ExDiaBarcanFlex, NetSubMsgElem
+--------------------------- MODULE DepthBridge ---------------------------
+EXTENDS HPaxosPlusCal, ExDiaBarcanFlex, NetSubMsgElem, LiveSigRelElem, AllMsgRelElem
 LOCAL INSTANCE TLAPS
 
+\* Specialized bridge for the concrete depth predicate, ever-known flavour:
+\* the extracted witness y is signed by the LIVE acceptor a, so it is
+\* live-relevant once sent (LiveSigRelElem) and hence eventually known
+\* (AllMsgRelElem, under the weakened fairness) -- i.e. in allmessages.
+\* Parameters are all FIRST-ORDER, so this IS citable at concrete arguments.
 LEMMA DepthBridge ==
-  ASSUME NEW a, NEW alpha, NEW p, NEW dd, NEW allmessages
-  PROVE  Spec =>
-         (IsAllMessagesEverSent(allmessages)
+  ASSUME MessageInterfaceAssumptions, LearnerGraphAssumptions, AcceptorsAssumptions,
+         NEW a \in LiveAcceptors, NEW alpha, NEW p, NEW dd, NEW allmessages
+  PROVE  (Spec /\ NetworkAssumption) =>
+         (IsAllMessagesEverKnown(allmessages)
           => ((<>(\E y \in Msgs : Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,dd)))
               => (\E y \in allmessages : Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,dd))))
 <1>c1. Init => ((\E y \in Msgs : Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,dd))
@@ -19,7 +25,7 @@ LEMMA DepthBridge ==
 <1>eb0. Spec => []((\E y \in Msgs : Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,dd))
                    <=> (\E y : y \in Msgs /\ Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,dd)))
   BY <1>c1, <1>c2, PTL DEF Spec
-<1> SUFFICES ASSUME Spec, IsAllMessagesEverSent(allmessages),
+<1> SUFFICES ASSUME Spec, NetworkAssumption, IsAllMessagesEverKnown(allmessages),
                     <>(\E y \in Msgs : Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,dd))
              PROVE  \E y \in allmessages : Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,dd)
   OBVIOUS
@@ -33,16 +39,18 @@ LEMMA DepthBridge ==
   BY <1>2
 <1>rigP. [](Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,dd))
          \/ []( ~(Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,dd)))  OBVIOUS
-<1>rigM. [](y \in Messages) \/ []( ~(y \in Messages))  OBVIOUS
-<1>nm. [](y \in Msgs => y \in Messages)  BY NetSubMsgElem
+<1>rigAM. [](y \in allmessages) \/ []( ~(y \in allmessages))  OBVIOUS
 <1>P. Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,dd)  BY <1>rigP, PTL
 <1>dn. <>(y \in Msgs)  BY PTL
-<1>M. y \in Messages  BY <1>dn, <1>nm, <1>rigM, PTL
-<1>am. y \in allmessages
-  <2>1. \A mm : (mm \in allmessages <=> IAMESCond(mm))  BY DEF IsAllMessagesEverSent
-  <2> HIDE DEF IAMESCond
-  <2>2. y \in allmessages <=> IAMESCond(y)  BY <2>1
-  <2>3. IAMESCond(y)  BY <1>M, <1>dn DEF IAMESCond
-  <2> QED  BY <2>2, <2>3
+<1>sigl. Sig(y) \in LiveAcceptors  BY <1>P
+<1>rel. [](y \in Msgs => y \in RelevantMsgs)
+  <2>1. Spec => [](y \in Msgs => y \in RelevantMsgs)  BY <1>sigl, LiveSigRelElem
+  <2> QED  BY <2>1
+<1>ram. [](y \in RelevantMsgs => y \in allmessages)
+  <2>1. (Spec /\ NetworkAssumption)
+          => (IsAllMessagesEverKnown(allmessages) => RelAllBoxOp(y, allmessages))
+    BY AllMsgRelElem
+  <2> QED  BY <2>1 DEF RelAllBoxOp
+<1>am. y \in allmessages  BY <1>dn, <1>rel, <1>ram, <1>rigAM, PTL
 <1> QED  BY <1>am, <1>P
 ====================================================================

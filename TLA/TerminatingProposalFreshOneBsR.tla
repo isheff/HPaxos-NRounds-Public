@@ -1,6 +1,6 @@
 ------------------- MODULE TerminatingProposalFreshOneBsR -------------------
 EXTENDS HPaxosPlusCal, HighNowBox, LowNowBox, AmNowBox,
-        DepthZeroLeadsToRW, DepthZeroBridge
+        DepthZeroLeadsToRW, DepthZeroBridge, KnownDiaMem, QuorumsHaveMembers
 LOCAL INSTANCE TLAPS
 
 \* Relaxed depth-0 base case: every live acceptor eventually sends a fresh
@@ -22,21 +22,23 @@ LEMMA TerminatingProposalFreshOneBsR ==
          \A x \in allmessages : ((IsProposal(x) /\ (B(x) > bal)) =>
            ((V(x) = V(p)) /\ ((B(x) < B(p)) \/ (x = p)))),
          p \in allmessages,
-         IsAllMessagesEverSent(allmessages)
+         IsAllMessagesEverKnown(allmessages)
   PROVE  LiveAcceptorsSentDepthBallot(allmessages, alpha, B(p), 0)
 <1>mmsg. M \in SUBSET Messages  OBVIOUS
-<1>high. []HighNowT(p, bal)  BY HighNowBox
-<1>low. []LowNowT(bal, M)  BY LowNowBox
-<1>amb. []AmNowT(allmessages)  BY AmNowBox
+<1>lg. LearnersMightAgree /\ ValidLearnerGraphAssumption
+  BY DEF LearnerGraphAssumptions
+<1>lne. LiveAcceptors # {}  BY <1>lg, QuorumsHaveMembers
+<1>high. []HighNowT(p, bal)  BY <1>lne, HighNowBox
+<1>low. []LowNowT(bal, M)  BY <1>lne, LowNowBox
+<1>amb. []AmNowT(allmessages)  BY <1>lne, AmNowBox
 <1> SUFFICES ASSUME NEW a \in LiveAcceptors
              PROVE  a \in SigS({x \in allmessages : B(x) = B(p) /\ HasDepth(alpha, x, 0)})
   BY DEF LiveAcceptorsSentDepthBallot
 <1>pnet. <>(p \in Msgs)
-  <2>1. \A mm : (mm \in allmessages <=> IAMESCond(mm))  BY DEF IsAllMessagesEverSent
-  <2> HIDE DEF IAMESCond
-  <2>2. p \in allmessages <=> IAMESCond(p)  BY <2>1
-  <2>3. IAMESCond(p)  BY <2>2
-  <2> QED  BY <2>3 DEF IAMESCond
+  <2>1. Spec => (IsAllMessagesEverKnown(allmessages)
+                 => (p \in allmessages => DiaMem(p)))
+    BY KnownDiaMem
+  <2> QED  BY <2>1 DEF DiaMem
 <1>hyp. DZLTHypR(alpha, bal, M, p, allmessages)
   BY <1>high, <1>low, <1>amb DEF DZLTHypR
 <1>dz. (Spec /\ TranFairness(p))

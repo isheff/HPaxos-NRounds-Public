@@ -11,7 +11,7 @@ LEMMA TwoASafeProduceR ==
          AcceptorsAssumptions,
          NEW alpha \in Learners, NEW am \in SUBSET Messages, NEW bal \in Ballots, NEW p \in Proposals,
          NEW d \in Nat, d + 1 \in 1..MaxDepth(alpha), B(p) \in Ballots, B(p) > bal,
-         NEW s \in SafeAcceptors, NEW WP,
+         NEW s \in LiveAcceptors, NEW WP,
          LiveAcceptors \in Quorums(alpha),
          \A x \in am : ((IsProposal(x) /\ (B(x) > bal)) =>
            ((V(x) = V(p)) /\ ((B(x) < B(p)) \/ (x = p)))),
@@ -19,6 +19,7 @@ LEMMA TwoASafeProduceR ==
          \A aa \in LiveAcceptors : \E w \in WP : Sig(w) = aa
   PROVE  TwoASafeConcl(am, alpha, p, d, s, WP)
 <1> USE DEF TwoASafeConcl
+<1>ssafe. s \in SafeAcceptors  BY DEF AcceptorsAssumptions, LiveAcceptorsAssumption
 <1>fa. IsFiniteSet(Acceptors)  BY DEF LearnerGraphAssumptions, FiniteAcceptors
 <1>ti. Spec => []TwoAInvariantT  BY TwoAHoldsT
 <1>de. (d + 1) - 1 = d  OBVIOUS
@@ -56,7 +57,7 @@ LEMMA TwoASafeProduceR ==
   <2>fin. IsFiniteSet(SigS(QS))  BY <2>acc, <1>fa, FS_Subset
   <2>lq. LiveAcceptors \in Quorums(alpha)  OBVIOUS
   <2>quo. SigS(QS) \in Quorums(alpha)  BY <2>lq, <2>qs, <2>acc, <2>fin, QuorumUpward
-  <2> QED  BY <2>propb, <2>quo, TwoAInvariantT DEF TwoAInvariantT
+  <2> QED  BY <2>propb, <2>quo, <1>ssafe, TwoAInvariantT DEF TwoAInvariantT
 <1>2. ((TwoAInvariantT /\ (\A xx : xx \in known_messages[s] => xx \in am)
         /\ WP \subseteq known_messages[s])
        => (\E twoa \in Msgs : Sig(twoa)=s /\ B(twoa)=B(p) /\ HasDepth(alpha,twoa,d+1))) /\ [Next]_vars
@@ -98,13 +99,13 @@ LEMMA TwoASafeProduceR ==
   <2>lq. LiveAcceptors \in Quorums(alpha)  OBVIOUS
   <2>quo. SigS(QSp) \in Quorums(alpha)  BY <2>lq, <2>qs, <2>acc, <2>fin, QuorumUpward
   <2>ex. \E twoa \in Msgs' : Sig(twoa)=s /\ B(twoa)=B(p) /\ HasDepth(alpha,twoa,d+1)
-    BY <2>propb, <2>quo, <2>ti2 DEF TwoAInvariantT
+    BY <2>propb, <2>quo, <2>ti2, <1>ssafe DEF TwoAInvariantT
   <2> QED  BY <2>ex
 <1>3. Spec => [](( TwoAInvariantT /\ (\A xx : xx \in known_messages[s] => xx \in am)
                   /\ WP \subseteq known_messages[s])
                  => (\E twoa \in Msgs : Sig(twoa)=s /\ B(twoa)=B(p) /\ HasDepth(alpha,twoa,d+1)))
   BY <1>1, <1>2, PTL DEF Spec
-<1> SUFFICES ASSUME Spec, IsAllMessagesEverSent(am)
+<1> SUFFICES ASSUME Spec, IsAllMessagesEverKnown(am)
              PROVE  [](WP \subseteq known_messages[s]
                        => (\E twoa \in Msgs : Sig(twoa)=s /\ B(twoa)=B(p) /\ HasDepth(alpha,twoa,d+1)))
   OBVIOUS

@@ -1,6 +1,6 @@
 -------------- MODULE LiveAcceptorsSentDepthBallotDecision --------------
 EXTENDS HPaxosPlusCal, FiniteSetTheorems,
-        TranClosureExpanding, QuorumUpward, FiniteDiamond
+        TranClosureExpanding, QuorumUpward, FiniteDiamond, KnownDiaMem
 LOCAL INSTANCE TLAPS
 
 LEMMA LiveAcceptorsSentDepthBallotDecision ==
@@ -9,7 +9,7 @@ LEMMA LiveAcceptorsSentDepthBallotDecision ==
          NEW alpha \in Learners, NEW allmessages \in SUBSET Messages, NEW b \in Ballots,
          LiveAcceptors \in Quorums(alpha),
          LiveAcceptorsSentDepthBallot(allmessages, alpha, b, MaxDepth(alpha))
-  PROVE  Spec => (IsAllMessagesEverSent(allmessages) => <>Decision(Msgs, alpha, b))
+  PROVE  Spec => (IsAllMessagesEverKnown(allmessages) => <>Decision(Msgs, alpha, b))
 <1>fa. IsFiniteSet(Acceptors)  BY DEF LearnerGraphAssumptions, FiniteAcceptors
 <1>lsub. LiveAcceptors \subseteq Acceptors
   BY DEF AcceptorsAssumptions, SafeAcceptorsAssumption, LiveAcceptorsAssumption
@@ -85,15 +85,13 @@ LEMMA LiveAcceptorsSentDepthBallotDecision ==
 <1>nec. Spec => [](W \subseteq Msgs => Decision(Msgs, alpha, b))
   BY <1>1, <1>2, PTL DEF Spec
 \* --- bring in Spec, IsAll; W eventually sent, compose ---
-<1> SUFFICES ASSUME Spec, IsAllMessagesEverSent(allmessages) PROVE <>Decision(Msgs, alpha, b)  OBVIOUS
+<1> SUFFICES ASSUME Spec, IsAllMessagesEverKnown(allmessages) PROVE <>Decision(Msgs, alpha, b)  OBVIOUS
 <1>dia. \A m \in W : DiaMem(m)
   <2> SUFFICES ASSUME NEW m \in W PROVE DiaMem(m)  OBVIOUS
   <2>mx. m \in allmessages  BY <1>wsub
-  <2>1. \A mm : (mm \in allmessages <=> IAMESCond(mm))  BY DEF IsAllMessagesEverSent
-  <2> HIDE DEF IAMESCond
-  <2>bic. m \in allmessages <=> IAMESCond(m)  BY <2>1
-  <2>cond. IAMESCond(m)  BY <2>mx, <2>bic
-  <2> QED  BY <2>cond DEF DiaMem, IAMESCond
+  <2>1. Spec => (IsAllMessagesEverKnown(allmessages) => (m \in allmessages => DiaMem(m)))
+    BY KnownDiaMem
+  <2> QED  BY <2>mx, <2>1
 <1>fdhyp. FD_Hyp(W)  BY <1>dia, <1>wfin DEF FD_Hyp
 <1>fdgood. FD_Good(W)  BY <1>fdhyp, FiniteDiamond
 <1>ev. <>(W \subseteq Msgs)  BY <1>fdgood DEF FD_Good, FD_Tgt

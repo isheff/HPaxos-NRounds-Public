@@ -1,6 +1,6 @@
 -------------------- MODULE TerminatingProposalTwoAStepR --------------------
 EXTENDS HPaxosPlusCal, FiniteSetTheorems,
-        TwoAStepLtProduceR, FiniteDiamond, DepthBridge
+        TwoAStepLtProduceR, FiniteDiamond, DepthBridge, KnownDiaMem
 LOCAL INSTANCE TLAPS
 
 \* Relaxed depth d -> d+1 step (clone of TerminatingProposalTwoAStep).
@@ -14,11 +14,11 @@ LEMMA TerminatingProposalTwoAStepR ==
          \A x \in allmessages : ((IsProposal(x) /\ (B(x) > bal)) =>
            ((V(x) = V(p)) /\ ((B(x) < B(p)) \/ (x = p)))),
          LiveAcceptorsSentDepthBallot(allmessages, alpha, B(p), d),
-         IsAllMessagesEverSent(allmessages)
+         IsAllMessagesEverKnown(allmessages)
   PROVE  LiveAcceptorsSentDepthBallot(allmessages, alpha, B(p), d+1)
 \* the per-acceptor TwoAStepLtOp facts, produced via TwoAStepLtProduceR
 <1>prod. \A s \in LiveAcceptors : TwoAStepLtOp(allmessages, alpha, p, d, s)
-  <2>1. IsAllMessagesEverSent(allmessages)
+  <2>1. IsAllMessagesEverKnown(allmessages)
         => (\A s \in LiveAcceptors : TwoAStepLtOp(allmessages, alpha, p, d, s))
     BY TwoAStepLtProduceR
   <2> QED  BY <2>1
@@ -46,11 +46,9 @@ LEMMA TerminatingProposalTwoAStepR ==
 <1>dia. \A m \in WPrimeStep(allmessages, alpha, p, d) : DiaMem(m)
   <2> SUFFICES ASSUME NEW m \in WPrimeStep(allmessages, alpha, p, d) PROVE DiaMem(m)  OBVIOUS
   <2>mx. m \in allmessages  BY <1>wsub
-  <2>1. \A mm : (mm \in allmessages <=> IAMESCond(mm))  BY DEF IsAllMessagesEverSent
-  <2> HIDE DEF IAMESCond
-  <2>bic. m \in allmessages <=> IAMESCond(m)  BY <2>1
-  <2>cond. IAMESCond(m)  BY <2>mx, <2>bic
-  <2> QED  BY <2>cond DEF DiaMem, IAMESCond
+  <2>1. Spec => (IsAllMessagesEverKnown(allmessages) => (m \in allmessages => DiaMem(m)))
+    BY KnownDiaMem
+  <2> QED  BY <2>mx, <2>1
 <1>fdhyp. FD_Hyp(WPrimeStep(allmessages, alpha, p, d))  BY <1>dia, <1>wfin DEF FD_Hyp
 <1>fdgood. FD_Good(WPrimeStep(allmessages, alpha, p, d))  BY <1>fdhyp, FiniteDiamond
 <1>ev. <>(WPrimeStep(allmessages, alpha, p, d) \subseteq Msgs)

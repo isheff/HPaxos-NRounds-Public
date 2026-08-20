@@ -1,7 +1,7 @@
 -------------------- MODULE TerminatingProposalRelaxed --------------------
 EXTENDS HPaxosPlusCal, FiniteSetTheorems,
         BBallot, BMonotone, TranClosureClosed, TranClosureExpanding,
-        CaughtSMonoT, BoxTranClosed, NetBridge,
+        CaughtSMonoT, BoxTranClosed, NetBridge, BoxKnownTranClosed,
         SafeAcceptorsNeverCaughtInfinite, MaxDepthFiniteAcceptors,
         TerminatingProposalTwoAInductionR, LASDBDecisionW
 LOCAL INSTANCE TLAPS
@@ -39,7 +39,7 @@ THEOREM TerminatingProposalRelaxed ==
       \* the only "temporal" requirement (other than Spec and Assumptions):
       \*  allmessages is actually the set of messages that can ever be received
       \*  by SafeAcceptors.
-   /\ IsAllMessagesEverSent(allmessages)
+   /\ IsAllMessagesEverKnown(allmessages)
       \* WEAKENED NetworkAssumption never forces the FIRST receipt of the
       \* Byzantine-signed proposal p (or of its history, which gates it), so
       \* fairness over Tran(p) is assumed separately.
@@ -59,7 +59,7 @@ THEOREM TerminatingProposalRelaxed ==
                        /\ ((B(x) < B(p)) \/ (x = p)))),
                     ConFromCaught(alpha, CaughtS({m \in allmessages : B(m) <= bal}))
                       = ConFromCaught(alpha, CaughtS({m \in allmessages : B(m) < B(p)})),
-                    IsAllMessagesEverSent(allmessages)
+                    IsAllMessagesEverKnown(allmessages)
              PROVE  <> Decision(Msgs, alpha, B(p))
   OBVIOUS
 <1>mi. TypeOKMessageInterface /\ TranTrans /\ TranFinite /\ AlwaysAProposal /\ TranAcyclic
@@ -67,8 +67,8 @@ THEOREM TerminatingProposalRelaxed ==
 <1> DEFINE M == {m \in allmessages : B(m) <= bal}
 <1>amsub. allmessages \subseteq Messages
   <2> SUFFICES ASSUME NEW mm \in allmessages PROVE mm \in Messages  OBVIOUS
-  <2>1. mm \in allmessages <=> IAMESCond(mm)  BY DEF IsAllMessagesEverSent
-  <2> QED  BY <2>1 DEF IAMESCond
+  <2>1. mm \in allmessages <=> IAMEKCond(mm)  BY DEF IsAllMessagesEverKnown
+  <2> QED  BY <2>1 DEF IAMEKCond
 <1>msub. M \subseteq allmessages  OBVIOUS
 <1>mmsg. M \in SUBSET Messages  BY <1>amsub, <1>msub
 <1>pprop. p \in Proposals  BY DEF IsProposal
@@ -83,16 +83,14 @@ THEOREM TerminatingProposalRelaxed ==
   <2>c1. CASE x = mm  BY <2>c1, <2>1, <1>msub
   <2>c2. CASE x \in TranExclusive(mm)
     <3>xmsg. x \in Messages  BY <1>mmsg, <1>mi, TranClosureClosed
-    <3>dm. <>(mm \in Msgs)
-      <4>1. mm \in allmessages <=> IAMESCond(mm)  BY DEF IsAllMessagesEverSent
-      <4> QED  BY <2>mam, <4>1 DEF IAMESCond
-    <3>btcop. BTCop(mm, x)  BY <2>mmsg, <2>c2, BoxTranClosed
-    <3>btc. [](({mm} \subseteq Msgs) => x \in Msgs)  BY <3>btcop DEF BTCop
-    <3>nbop. NBop(mm)  BY NetBridge
-    <3>nbx. [](({mm} \subseteq Msgs) <=> (mm \in Msgs))  BY <3>nbop DEF NBop
-    <3>dx. <>(x \in Msgs)  BY <3>dm, <3>btc, <3>nbx, PTL
-    <3>1b. x \in allmessages <=> IAMESCond(x)  BY DEF IsAllMessagesEverSent
-    <3> QED  BY <3>xmsg, <3>dx, <3>1b DEF IAMESCond
+    <3>dm. <>KnownToLive(mm)
+      <4>1. mm \in allmessages <=> IAMEKCond(mm)  BY DEF IsAllMessagesEverKnown
+      <4> QED  BY <2>mam, <4>1 DEF IAMEKCond
+    <3>ktcop. KTCop(mm, x)  BY <2>mmsg, <2>c2, BoxKnownTranClosed
+    <3>ktc. [](KnownToLive(mm) => KnownToLive(x))  BY <3>ktcop DEF KTCop
+    <3>dx. <>KnownToLive(x)  BY <3>dm, <3>ktc, PTL
+    <3>1b. x \in allmessages <=> IAMEKCond(x)  BY DEF IsAllMessagesEverKnown
+    <3> QED  BY <3>xmsg, <3>dx, <3>1b DEF IAMEKCond
   <2> QED  BY <2>cases, <2>c1, <2>c2
 <1>balls. \A x \in TranClosure(M) : B(x) <= bal
   <2> SUFFICES ASSUME NEW x \in TranClosure(M) PROVE B(x) <= bal  OBVIOUS

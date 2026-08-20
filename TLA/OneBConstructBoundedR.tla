@@ -9,7 +9,8 @@ EXTENDS HPaxosPlusCal, BBallot, OneBConstructT,
 LEMMA OneBConstructBoundedR ==
   ASSUME MessageInterfaceAssumptions, LearnerGraphAssumptions, AcceptorsAssumptions,
          Inv, KnownTranClosureInvT, SelfSentBoundedInvT, SelfSentNotProposalInvT,
-         NEW self \in SafeAcceptors, NEW p \in Proposals, NEW bal \in Ballots,
+         NEW self \in SafeAcceptors, self \in LiveAcceptors,
+         NEW p \in Proposals, NEW bal \in Ballots,
          TranExclusive(p) \subseteq known_messages[self],
          p \notin known_messages[self],
          \A ww \in known_messages[self] : IsProposal(ww) => B(ww) # B(p),
@@ -17,7 +18,7 @@ LEMMA OneBConstructBoundedR ==
          self \notin CaughtS(TranClosure((known_messages[self] \cup {p})
                                           \cup {mm \in Msgs : Sig(mm) = self})),
          B(p) > bal,
-         \A z \in Proposals : ((z \in Msgs) /\ (B(z) > bal)) =>
+         \A z \in Proposals : ((z \in RelevantMsgs) /\ (B(z) > bal)) =>
            ((V(z) = V(p)) /\ ((B(z) < B(p)) \/ (z = p)))
   PROVE \E known \in SUBSET Messages :
         /\ known \subseteq Msgs

@@ -1,7 +1,9 @@
 ------------------------------ MODULE Termination ------------------------------
 EXTENDS HPaxosPlusCal, BBallot,
-        IsAllMessagesEverSentExists, TemporalDecideableProposalExists,
-        TerminatingProposal
+        IsAllMessagesEverKnownExists, TemporalDecideableProposalExists,
+        TerminatingProposal, KnowLeadsToTranW, KnownToLiveElem, KnownDiaMem,
+        QuorumsHaveMembers
+LOCAL INSTANCE TLAPS
 
 THEOREM Termination ==
   \A alpha \in Learners : \* we'll show we can make alpha decide
@@ -45,11 +47,11 @@ THEOREM Termination ==
   BY DEF MessageInterfaceAssumptions
 \* allmessages = the ever-sent set; M = {m \in allmessages : B(m)<=bal} is the
 \* ever-sent, ballot-<=-bal set (no <> inside the set-builder -- SANY-clean).
-<1> PICK allmessages : IsAllMessagesEverSent(allmessages)  BY IsAllMessagesEverSentExists
+<1> PICK allmessages : IsAllMessagesEverKnown(allmessages)  BY IsAllMessagesEverKnownExists
 <1>amsub. allmessages \subseteq Messages
   <2> SUFFICES ASSUME NEW mm \in allmessages PROVE mm \in Messages  OBVIOUS
-  <2>1. mm \in allmessages <=> IAMESCond(mm)  BY DEF IsAllMessagesEverSent
-  <2> QED  BY <2>1 DEF IAMESCond
+  <2>1. mm \in allmessages <=> IAMEKCond(mm)  BY DEF IsAllMessagesEverKnown
+  <2> QED  BY <2>1 DEF IAMEKCond
 <1> DEFINE M == {m \in allmessages : B(m) <= bal}
 \* the decideable proposal p for the ever-sent <= bal messages
 <1>tdpe. \E p \in Proposals :
@@ -75,17 +77,33 @@ THEOREM Termination ==
 <1>veq. V(p) = DecideableProposalV(alpha, bal, {m \in allmessages : B(m) <= bal})
   OBVIOUS
 <1>pam. p \in allmessages
-  <2>pa. p \in allmessages <=> IAMESCond(p)  BY DEF IsAllMessagesEverSent
-  <2> QED  BY <2>pa, <1>ppmsg DEF IAMESCond
+  <2>lg. LearnersMightAgree /\ ValidLearnerGraphAssumption
+    BY DEF LearnerGraphAssumptions
+  <2>lne. LiveAcceptors # {}  BY <2>lg, QuorumsHaveMembers
+  <2> PICK a0 \in LiveAcceptors : TRUE  BY <2>lne
+  <2>ptp. p \in Tran(p)  BY DEF Tran
+  <2>klt. KLTT(p, a0, p)  BY <1>ppmsg, <2>ptp, KnowLeadsToTranW
+  <2>lt. (Spec /\ TranFairness(p)) => ((p \in Msgs) ~> (p \in known_messages[a0]))
+    BY <2>klt DEF KLTT
+  <2>lt2. (p \in Msgs) ~> (p \in known_messages[a0])  BY <2>lt
+  <2>kb. [](p \in known_messages[a0] => KnownToLive(p))
+    <3>0. KTLElemOp(a0, p)  BY KnownToLiveElem
+    <3>1. Spec => [](p \in known_messages[a0] => KnownToLive(p))  BY <3>0 DEF KTLElemOp
+    <3> QED  BY <3>1
+  <2>dk. <>KnownToLive(p)  BY <2>lt2, <2>kb, PTL
+  <2>pa. p \in allmessages <=> IAMEKCond(p)  BY DEF IsAllMessagesEverKnown
+  <2> QED  BY <2>pa, <2>dk, <1>ppmsg DEF IAMEKCond
 <1>isprop. IsProposal(p)  BY DEF IsProposal
 <1>bpgt. B(p) > bal  OBVIOUS
 <1>signa. Sig(p) \notin Acceptors  OBVIOUS
-<1>iame. IsAllMessagesEverSent(allmessages)  OBVIOUS
+<1>iame. IsAllMessagesEverKnown(allmessages)  OBVIOUS
 <1>uniqam. \A x \in allmessages : ((IsProposal(x) /\ (B(x) > bal)) => (x = p))
   <2> SUFFICES ASSUME NEW x \in allmessages, IsProposal(x), B(x) > bal PROVE x = p  OBVIOUS
   <2>xp. x \in Proposals  BY DEF IsProposal
-  <2>xa. x \in allmessages <=> IAMESCond(x)  BY DEF IsAllMessagesEverSent
-  <2>xnet. <>(x \in Msgs)  BY <2>xa DEF IAMESCond
+  <2>dm. Spec => (IsAllMessagesEverKnown(allmessages)
+                  => (x \in allmessages => DiaMem(x)))
+    BY KnownDiaMem
+  <2>xnet. <>(x \in Msgs)  BY <2>dm DEF DiaMem
   <2> QED  BY <2>xp, <2>xnet
 <1> QED
   BY <1>amsub, <1>isprop, <1>signa, <1>bpgt, <1>uniqam, <1>teq, <1>veq, <1>iame, <1>pam,

@@ -36,14 +36,14 @@ LEMMA DepthZeroKnownImpliesSentR ==
 <1>mi. TypeOKMessageInterface /\ TranTrans /\ TranFinite /\ AlwaysAProposal /\ TranAcyclic
   BY DEF MessageInterfaceAssumptions
 <1>hi0. HighNowT(p, bal)  BY PTL
-<1>high. \A z \in Proposals : ((z \in Msgs) /\ (B(z) > bal)) =>
+<1>high. \A z \in Proposals : ((z \in RelevantMsgs) /\ (B(z) > bal)) =>
            ((V(z) = V(p)) /\ ((B(z) < B(p)) \/ (z = p)))
   BY <1>hi0 DEF HighNowT
 <1>lo0. LowNowT(bal, m)  BY PTL
-<1>low. \A w \in Messages : ((w \in Msgs) /\ (B(w) <= bal)) => w \in m
+<1>low. \A w \in Messages : ((w \in RelevantMsgs) /\ (B(w) <= bal)) => w \in m
   BY <1>lo0 DEF LowNowT
 <1>am0. AmNowT(am)  BY PTL
-<1>amn. \A xx : (xx \in Msgs) => (xx \in am)
+<1>amn. \A xx : (xx \in RelevantMsgs) => (xx \in am)
   BY <1>am0 DEF AmNowT
 <1>initt. Init => DZInvT(alpha, p, a)
   <2> SUFFICES ASSUME Init PROVE DZInvT(alpha, p, a)  BY DEF DZInvT
@@ -96,7 +96,7 @@ LEMMA DepthZeroKnownImpliesSentR ==
           <6>skhyp. SelfKnownHypR(a, p, bal)
             <7>1. B(p) > bal  OBVIOUS
             <7>2. p \notin known_messages[a]  BY <5>newcase
-            <7>3. \A z \in Proposals : ((z \in Msgs) /\ (B(z) > bal)) =>
+            <7>3. \A z \in Proposals : ((z \in RelevantMsgs) /\ (B(z) > bal)) =>
                     ((V(z) = V(p)) /\ ((B(z) < B(p)) \/ (z = p)))  BY <1>high
             <7> QED BY <7>1, <7>2, <7>3 DEF SelfKnownHypR
           <6>class. \A w \in (known_messages[a] \cup {mm \in Msgs : Sig(mm) = a}) :
@@ -151,7 +151,7 @@ LEMMA DepthZeroKnownImpliesSentR ==
             <7>5. a \notin CaughtS(TranClosure((known_messages[a] \cup {p})
                                                 \cup {mm \in Msgs : Sig(mm) = a}))  BY <6>unc
             <7>6. B(p) > bal  OBVIOUS
-            <7>7. \A z \in Proposals : ((z \in Msgs) /\ (B(z) > bal)) =>
+            <7>7. \A z \in Proposals : ((z \in RelevantMsgs) /\ (B(z) > bal)) =>
                     ((V(z) = V(p)) /\ ((B(z) < B(p)) \/ (z = p)))  BY <1>high
             <7> QED BY <7>1, <7>2, <7>3, <7>4, <7>5, <7>6, <7>7 DEF OneBCBHypR
           <6>ex. \E known \in SUBSET Messages :
@@ -197,11 +197,13 @@ LEMMA DepthZeroKnownImpliesSentR ==
             <7>win. w \in (known_messages[a] \cup {mm \in Msgs : Sig(mm) = a})  BY <6>tceq
             <7>cl. (B(w) <= bal) \/ ((B(w) < B(p)) /\ (V(w) = V(p)))  BY <7>win, <6>class
             <7>wnet. w \in Msgs  BY <7>win, <2>i, <1>a
+            <7>wrel. w \in RelevantMsgs
+              BY <7>win, <7>wnet DEF RelevantMsgs, LiveRelevant
             <7>wmsg. w \in Messages  BY <7>wnet, <2>i
             <7>bwnat. B(w) \in Ballots  BY <7>wmsg, <1>mi, BBallot
             <7>split. (B(w) <= bal) \/ (B(w) > bal)  BY <7>bwnat, <6>balnat DEF Ballots
             <7>c1. CASE B(w) <= bal
-              <8>wm. w \in m  BY <7>wnet, <7>wmsg, <7>c1, <1>low
+              <8>wm. w \in m  BY <7>wrel, <7>wmsg, <7>c1, <1>low
               <8>wtc. w \in TranClosure(m)  BY <8>wm, TranClosureExpanding
               <8> QED BY <7>c1, <8>wtc
             <7>c2. CASE B(w) > bal
@@ -217,7 +219,9 @@ LEMMA DepthZeroKnownImpliesSentR ==
             <7>win. w \in (known_messages[a] \cup {mm \in Msgs : Sig(mm) = a})  BY <6>tceq
             <7>cl. (B(w) <= bal) \/ ((B(w) < B(p)) /\ (V(w) = V(p)))  BY <7>win, <6>class
             <7>wnet. w \in Msgs  BY <7>win, <2>i, <1>a
-            <7>wam. w \in am  BY <7>wnet, <1>amn
+            <7>wrel. w \in RelevantMsgs
+              BY <7>win, <7>wnet DEF RelevantMsgs, LiveRelevant
+            <7>wam. w \in am  BY <7>wrel, <1>amn
             <7>wmsg. w \in Messages  BY <7>wnet, <2>i
             <7>bwnat. B(w) \in Ballots  BY <7>wmsg, <1>mi, BBallot
             <7>blt. B(w) < B(p)

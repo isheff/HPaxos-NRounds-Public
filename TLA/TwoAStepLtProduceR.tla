@@ -13,7 +13,7 @@ LEMMA TwoAStepLtProduceR ==
          \A x \in am : ((IsProposal(x) /\ (B(x) > bal)) =>
            ((V(x) = V(p)) /\ ((B(x) < B(p)) \/ (x = p)))),
          LiveAcceptorsSentDepthBallot(am, alpha, B(p), d)
-  PROVE  IsAllMessagesEverSent(am) => (\A s \in LiveAcceptors : TwoAStepLtOp(am, alpha, p, d, s))
+  PROVE  IsAllMessagesEverKnown(am) => (\A s \in LiveAcceptors : TwoAStepLtOp(am, alpha, p, d, s))
 <1>ldsb. LiveAcceptors \subseteq SigS({x \in am : B(x) = B(p) /\ HasDepth(alpha, x, d)})
   BY DEF LiveAcceptorsSentDepthBallot
 <1>ch. \A aa \in LiveAcceptors :
@@ -60,7 +60,7 @@ LEMMA TwoAStepLtProduceR ==
   <2>2. Sig(w) = aa  BY <2>1, <1>ch
   <2> QED  BY <2>1, <2>2
 <1> SUFFICES ASSUME NEW s \in LiveAcceptors
-             PROVE  IsAllMessagesEverSent(am) => TwoAStepLtOp(am, alpha, p, d, s)
+             PROVE  IsAllMessagesEverKnown(am) => TwoAStepLtOp(am, alpha, p, d, s)
   OBVIOUS
 <1>ssafe. s \in SafeAcceptors  BY DEF AcceptorsAssumptions, LiveAcceptorsAssumption
 \* the two boxed facts, proven while Spec/IsAll are NOT ambient (in the goal):
@@ -92,7 +92,7 @@ LEMMA TwoAStepLtProduceR ==
     BY <1>wsigl DEF RelevantMsgs, LiveRelevant
   <2> QED  BY <2>i, <2>s, PTL DEF Spec
 \* now bring in IsAll, Spec, NetworkAssumption and compose the leads-to:
-<1> SUFFICES ASSUME IsAllMessagesEverSent(am), Spec, NetworkAssumption
+<1> SUFFICES ASSUME IsAllMessagesEverKnown(am), Spec, NetworkAssumption
              PROVE  (WPrimeStep(am, alpha, p, d) \subseteq Msgs)
                     ~> (\E twoa \in Msgs : Sig(twoa)=s /\ B(twoa)=B(p) /\ HasDepth(alpha,twoa,d+1))
   BY DEF TwoAStepLtOp

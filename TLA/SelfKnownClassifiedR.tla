@@ -6,10 +6,11 @@ EXTENDS HPaxosPlusCal, BBallot, BAchievedByProposal
 LEMMA SelfKnownClassifiedR ==
   ASSUME MessageInterfaceAssumptions, LearnerGraphAssumptions,
          Inv, KnownTranClosureInvT, SelfSentBoundedInvT, SelfSentNotProposalInvT,
-         NEW self \in SafeAcceptors, NEW p \in Proposals, NEW bal \in Ballots,
+         NEW self \in SafeAcceptors, self \in LiveAcceptors,
+         NEW p \in Proposals, NEW bal \in Ballots,
          B(p) > bal,
          p \notin known_messages[self],
-         \A z \in Proposals : ((z \in Msgs) /\ (B(z) > bal)) =>
+         \A z \in Proposals : ((z \in RelevantMsgs) /\ (B(z) > bal)) =>
            ((V(z) = V(p)) /\ ((B(z) < B(p)) \/ (z = p))),
          NEW w \in (known_messages[self] \cup {mm \in Msgs : Sig(mm) = self})
   PROVE (B(w) <= bal) \/ ((B(w) < B(p)) /\ (V(w) = V(p)))
@@ -20,7 +21,7 @@ LEMMA SelfKnownClassifiedR ==
   BY DEF Inv
 <1>mi. TranFinite /\ TypeOKMessageInterface /\ AlwaysAProposal
   BY DEF MessageInterfaceAssumptions
-<1> DEFINE Rel(z) == ((z \in Msgs) /\ (B(z) > bal)) =>
+<1> DEFINE Rel(z) == ((z \in RelevantMsgs) /\ (B(z) > bal)) =>
                        ((V(z) = V(p)) /\ ((B(z) < B(p)) \/ (z = p)))
 <1>relhyp. \A z \in Proposals : Rel(z)  BY DEF Rel
 <1> HIDE DEF Rel
@@ -54,9 +55,13 @@ LEMMA SelfKnownClassifiedR ==
     <3>1. CASE q = w  BY <3>1, <1>wnet
     <3>2. CASE q \in TranExclusive(w)  BY <3>2, <1>wte, <1>i
     <3> QED BY <2>qcase, <3>1, <3>2
+  <2>qin. q \in known_messages[self] \cup {mm \in Msgs : Sig(mm) = self}
+    BY <2>qcase, <1>wor, <1>wte
+  <2>qrel. q \in RelevantMsgs
+    BY <2>qin, <2>qnet DEF RelevantMsgs, LiveRelevant
   <2>relq. Rel(q)  BY <2>qprop, <1>relhyp
   <2>qconc. (V(q) = V(p)) /\ ((B(q) < B(p)) \/ (q = p))
-    BY <2>relq, <2>qnet, <2>qbalpos DEF Rel
+    BY <2>relq, <2>qrel, <2>qbalpos DEF Rel
   <2>notself. p \notin {mm \in Msgs : Sig(mm) = self}
     <3>allns. \A mm \in Msgs : Sig(mm) = self => ~IsProposal(mm)
       BY SelfSentNotProposalInvT DEF SelfSentNotProposalInvT

@@ -25,7 +25,7 @@ LEMMA TerminatingProposalTwoAInductionR ==
          \A x \in allmessages : ((IsProposal(x) /\ (B(x) > bal)) =>
            ((V(x) = V(p)) /\ ((B(x) < B(p)) \/ (x = p)))),
          p \in allmessages,
-         IsAllMessagesEverSent(allmessages)
+         IsAllMessagesEverKnown(allmessages)
   PROVE  \A d \in 0..MaxDepth(alpha) : LiveAcceptorsSentDepthBallot(allmessages, alpha, B(p), d)
 <1>lg. /\ FiniteAcceptors /\ LearnersNonEmpty /\ QuorumsNonEmpty
        /\ LearnersMightAgree /\ ValidLearnerGraphAssumption

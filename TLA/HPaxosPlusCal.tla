@@ -391,11 +391,21 @@ TwoAInvariantT ==
    /\ HasDepth(alpha, twoa, d)
    /\ IsTwoA(twoa))
 
-IAMESCond(mm) == mm \in Messages /\ <>(mm \in Msgs)
-IsAllMessagesEverSent(x) == \A mm : (mm \in x <=> IAMESCond(mm))
+\* "Known to some live acceptor" -- the state predicate whose <> defines the
+\* ever-known set.  Named so PTL sees a single atom.
+KnownToLive(x) == \E b \in LiveAcceptors : x \in known_messages[b]
+DiaKTL(mm) == <>KnownToLive(mm)
 
+\* EVER-KNOWN (was: ever-sent).  allmessages now collects exactly the
+\* messages some LIVE acceptor eventually learns -- Byzantine-signed junk
+\* that is sent but never received by anyone live is excluded.
+IAMEKCond(mm) == mm \in Messages /\ <>KnownToLive(mm)
+IsAllMessagesEverKnown(x) == \A mm : (mm \in x <=> IAMEKCond(mm))
+
+\* WEAKENED to RelevantMsgs sources: with allmessages = the ever-KNOWN set,
+\* only live-relevant sent messages are guaranteed to appear in it.
 LowNowT(bal, m) ==
-  \A w \in Messages : ((w \in Msgs) /\ (B(w) <= bal)) => w \in m
+  \A w \in Messages : ((w \in RelevantMsgs) /\ (B(w) <= bal)) => w \in m
 
 DZInvT(alpha, p, a) ==
   p \in known_messages[a] =>
@@ -434,9 +444,11 @@ LiveAcceptorsSentDepthBallot(m, alpha, b, d) ==
 \* at ANY concrete message (non-identity temporal-conclusion application fails
 \* unless the conclusion is an opaque operator application).
 NetMsgBoxOp(mm)     == [](mm \in Msgs => mm \in Messages)
-AllMsgBoxOp(mm, am) == [](mm \in Msgs => mm \in am)
-
-KnownNetBoxOp(s) == [](\A xx : xx \in known_messages[s] => xx \in Msgs)
+RelAllBoxOp(mm, am) == [](mm \in RelevantMsgs => mm \in am)
+\* Per-pair Tran-closure of KnownToLive (a known message's history is known).
+KTCop(mm, w) == Spec => [](KnownToLive(mm) => KnownToLive(w))
+\* Membership in a live acceptor's knowledge witnesses KnownToLive, boxed.
+KTLElemOp(a, xx) == Spec => [](xx \in known_messages[a] => KnownToLive(xx))
 
 KnownAllBoxOp(s, am) == [](\A xx : xx \in known_messages[s] => xx \in am)
 
@@ -453,26 +465,26 @@ TwoAStepLtOp(am, alpha, p, d, s) ==
 
 \* Wrapped conclusion so it can be cited at WP := WPrimeStep(...) first-order.
 TwoASafeConcl(am, alpha, p, d, s, WP) ==
-  Spec => (IsAllMessagesEverSent(am)
+  Spec => (IsAllMessagesEverKnown(am)
            => [](WP \subseteq known_messages[s]
                  => (\E twoa \in Msgs :
                        Sig(twoa) = s /\ B(twoa) = B(p) /\ HasDepth(alpha, twoa, d+1))))
 
 LASDBDecOp(alpha, allmessages, b) ==
-  Spec => (IsAllMessagesEverSent(allmessages) => <>Decision(Msgs, alpha, b))
+  Spec => (IsAllMessagesEverKnown(allmessages) => <>Decision(Msgs, alpha, b))
 
 HighNowT(p, bal) ==
-  \A z \in Proposals : ((z \in Msgs) /\ (B(z) > bal)) =>
+  \A z \in Proposals : ((z \in RelevantMsgs) /\ (B(z) > bal)) =>
     ((V(z) = V(p)) /\ ((B(z) < B(p)) \/ (z = p)))
 
 \* Relaxed analogue of SelfKnownBoundedByUniqueT: everything self knows or has
 \* sent is either low (<= bal) or a V(p)-valued message strictly below B(p).
-AmNowT(am) == \A xx : (xx \in Msgs) => (xx \in am)
+AmNowT(am) == \A xx : (xx \in RelevantMsgs) => (xx \in am)
 
 SelfKnownHypR(self, p, bal) ==
   /\ B(p) > bal
   /\ p \notin known_messages[self]
-  /\ (\A z \in Proposals : ((z \in Msgs) /\ (B(z) > bal)) =>
+  /\ (\A z \in Proposals : ((z \in RelevantMsgs) /\ (B(z) > bal)) =>
        ((V(z) = V(p)) /\ ((B(z) < B(p)) \/ (z = p))))
 
 OneBCBHypR(self, p, bal) ==
@@ -483,7 +495,7 @@ OneBCBHypR(self, p, bal) ==
   /\ self \notin CaughtS(TranClosure((known_messages[self] \cup {p})
                                       \cup {mm \in Msgs : Sig(mm) = self}))
   /\ B(p) > bal
-  /\ (\A z \in Proposals : ((z \in Msgs) /\ (B(z) > bal)) =>
+  /\ (\A z \in Proposals : ((z \in RelevantMsgs) /\ (B(z) > bal)) =>
        ((V(z) = V(p)) /\ ((B(z) < B(p)) \/ (z = p))))
 
 DPFreshHypR(alpha, bal, m, p, a, known, oneb, CS2) ==

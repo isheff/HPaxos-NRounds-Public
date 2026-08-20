@@ -117,3 +117,90 @@ Unchanged but re-verified (their statements survive as-is):
 `EKExtract`, `CWFTransferAt`, `CEnabledTransfer`,
 `CAlwaysEventuallyKnownInvariant`, and all Msgs-source bridges
 (`NetBridge`, `BoxTranClosed`, `NetStable`, ...), now serving the Tran chain.
+
+# Follow-up: IsAllMessagesEverSent becomes IsAllMessagesEverKnown
+
+**Question.** Redefine the `allmessages` abstraction: not the messages
+eventually *sent* (`<>(mm \in Msgs)`) but the messages eventually *known to
+some live acceptor*. Can we still prove all the theorems?
+
+**Answer.** Yes — every theorem is re-proved with the same statements modulo
+the rename:
+
+```tla
+KnownToLive(x) == \E b \in LiveAcceptors : x \in known_messages[b]
+IAMEKCond(mm)  == mm \in Messages /\ <>KnownToLive(mm)
+IsAllMessagesEverKnown(x) == \A mm : (mm \in x <=> IAMEKCond(mm))
+```
+
+This is a further *weakening* of the termination hypotheses: the uniqueness,
+value, and connectivity conditions on `allmessages` now constrain only what
+live acceptors ever learn. Byzantine-signed junk that is sent but never
+received by anyone live is outside `allmessages`, so e.g. a Byzantine
+proposer may broadcast competing high-ballot proposals with impunity as long
+as no live acceptor ever learns them. (`Termination`'s own surface
+uniqueness hypothesis is still phrased over `<>(x \in Msgs)` — the sent
+form; it could be weakened to the ever-known form with a two-line change,
+since only its `allmessages`-restriction is ever used.)
+
+## What had to move
+
+The ever-sent set contained *every* sent message (`[]AmNowT` was
+`\A xx : xx \in Msgs => xx \in am`); the ever-known set cannot (nothing
+forces Byzantine junk to be learned). The three "Now" invariant-side
+conditions weaken to RelevantMsgs scope:
+
+* `AmNowT(am)`  — `\A xx : xx \in RelevantMsgs => xx \in am`
+* `LowNowT`, `HighNowT` — antecedents `\in RelevantMsgs` instead of `\in Msgs`
+  (ditto the matching clauses of `SelfKnownHypR` / `OneBCBHypR`)
+
+and their producers ride the weakened fairness: a live-relevant message is
+*eventually* known (`KnowLeadsTo`), hence in the ever-known set
+(`AllMsgRelElem`, needing `Spec /\ NetworkAssumption` and a nonempty
+`LiveAcceptors` — supplied by `LiveAcceptors \in Quorums(alpha)`).
+
+The invariant chains absorb the weakening because every message they apply
+these facts to is already in a live acceptor's knowledge or signed by a live
+acceptor — i.e. live-relevant. Concretely: `SelfKnownClassifiedR`,
+`OneBConstructBoundedR`, `TwoASafeProduceR` (and their wrappers) now take
+`self`/`s` in `LiveAcceptors`; `DepthZeroKnownImpliesSentR` upgrades its
+application sites with `w \in RelevantMsgs` memberships (its `a` was already
+live).
+
+Everything that read `<>(mm \in Msgs)` straight off the old `IAMESCond` now
+goes through `<>KnownToLive(mm)` plus one of:
+
+* `KnownDiaMem` — am-member => `DiaMem` (a known message is a sent message);
+* `BoxKnownTranClosed`/`KTCop` — `KnownToLive` is TranExclusive-closed
+  (`KnownTranClosureInvT`), giving Tran-closedness of the ever-known set
+  *without* the old diamond-MP through `BTCop`;
+* `LiveSigRelElem` + `AllMsgRelElem` — the witness bridges
+  (`DepthZeroBridge`, `DepthBridge`): the extracted 1B/2A witness is signed
+  by a live acceptor, hence live-relevant once sent, hence ever-known;
+* `KnownToLiveElem`/`KTLElemOp` — `Termination` derives
+  `p \in allmessages` from `<>(p \in Msgs)` via `TranFairness(p)`
+  (`KnowLeadsToTranW` at p itself: p is eventually *received*, not merely
+  sent).
+
+## Module inventory (delta)
+
+New: `IsAllMessagesEverKnownExists` (replaces `IsAllMessagesEverSentExists`),
+`AllMsgRelElem`, `LiveSigRelElem`, `BoxKnownTranClosed`, `KnownDiaMem`,
+`KnownToLiveElem`; ops `KnownToLive`, `DiaKTL`, `IAMEKCond`,
+`IsAllMessagesEverKnown`, `RelAllBoxOp`, `KTCop`, `KTLElemOp`.
+
+Rebuilt: `AmNowBox`, `HighNowBox`, `LowNowBox` (now under
+`Spec /\ NetworkAssumption`), `KnownSubAll` (s live; no fairness needed —
+current knowledge witnesses `<>KnownToLive`), `DepthZeroBridge`,
+`DepthBridge`.
+
+Modified: `SelfKnownClassifiedR(+RW)`, `OneBConstructBoundedR(+RW)`,
+`DepthZeroKnownImpliesSentR`, `TwoASafeProduceR`, `TwoAStepLtProduceR`,
+`SafeAcceptorsNeverCaughtInfinite`, `TerminatingProposalTwoAStepR`,
+`LiveAcceptorsSentDepthBallotDecision`, `TerminatingProposalFreshOneBsR`,
+`TerminatingProposalRelaxed`, `TerminatingProposal`, `Termination` (plus the
+mechanical rename in `TemporalDecideableProposalExists`,
+`TerminatingProposalTwoAInductionR`, `LASDBDecisionW` consumers).
+
+Removed (orphaned): `AllMsgNetElem` + `AllMsgBoxOp`, `KnownSubNet` +
+`KnownNetBoxOp`, `NetSubMsgElemW`.

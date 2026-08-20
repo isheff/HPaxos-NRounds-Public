@@ -1,12 +1,13 @@
 ------------------ MODULE SafeAcceptorsNeverCaughtInfinite ------------------
 EXTENDS HPaxosPlusCal, FiniteSetTheorems, FiniteDiamond,
         NeverCaughtStep, BridgeUncaught, DiaBoxAtomContra,
-        AlwaysSafeAcceptorsUncaughtInvariant
+        AlwaysSafeAcceptorsUncaughtInvariant, KnownDiaMem
 LOCAL INSTANCE TLAPS
 
 \* corollary of AlwaysSafeAcceptorsUncaughtInvariant: if some SafeAcceptor s were
 \* caught by the (infinite) set of all-ever-sent messages, then the two messages
-\* m1,m2 that catch it are each eventually in Msgs (IsAllMessagesEverSent);
+\* m1,m2 that catch it are each eventually known, hence eventually in Msgs
+\* (KnownDiaMem);
 \* being finite they are eventually BOTH in Msgs at once (FiniteDiamond), at
 \* which state s is caught in Msgs -- contradicting AlwaysSafeAcceptorsUncaught.
 LEMMA SafeAcceptorsNeverCaughtInfinite ==
@@ -16,11 +17,11 @@ LEMMA SafeAcceptorsNeverCaughtInfinite ==
    /\ ValueInterfaceAssumptions
    /\ LearnerGraphAssumptions
    /\ AcceptorsAssumptions
-   /\ IsAllMessagesEverSent(allmessages)
+   /\ IsAllMessagesEverKnown(allmessages)
   ) => (SafeAcceptors \cap CaughtS(allmessages)) = {}
 <1> SUFFICES ASSUME NEW allmessages,
                     Spec, MessageInterfaceAssumptions, ValueInterfaceAssumptions,
-                    LearnerGraphAssumptions, AcceptorsAssumptions, IsAllMessagesEverSent(allmessages)
+                    LearnerGraphAssumptions, AcceptorsAssumptions, IsAllMessagesEverKnown(allmessages)
              PROVE  (SafeAcceptors \cap CaughtS(allmessages)) = {}
   OBVIOUS
 <1> SUFFICES ASSUME NEW s, s \in SafeAcceptors, s \in CaughtS(allmessages)
@@ -46,8 +47,9 @@ LEMMA SafeAcceptorsNeverCaughtInfinite ==
 <1>mdia. \A m \in {m1, m2} : DiaMem(m)
   <2> SUFFICES ASSUME NEW m \in {m1, m2} PROVE DiaMem(m)  OBVIOUS
   <2>mx. m \in allmessages  BY <1>msub
-  <2>1. m \in allmessages <=> IAMESCond(m)  BY DEF IsAllMessagesEverSent
-  <2> QED  BY <2>mx, <2>1 DEF DiaMem, IAMESCond
+  <2>1. Spec => (IsAllMessagesEverKnown(allmessages) => (m \in allmessages => DiaMem(m)))
+    BY KnownDiaMem
+  <2> QED  BY <2>mx, <2>1
 <1>fdhyp. FD_Hyp({m1, m2})  BY <1>mfin, <1>mdia DEF FD_Hyp
 <1>fdgood. FD_Good({m1, m2})  BY <1>fdhyp, FiniteDiamond
 <1>ev. <>({m1, m2} \subseteq Msgs)  BY <1>fdgood DEF FD_Good, FD_Tgt

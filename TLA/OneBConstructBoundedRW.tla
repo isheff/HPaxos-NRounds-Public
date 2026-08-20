@@ -5,7 +5,8 @@ EXTENDS HPaxosPlusCal, OneBConstructBoundedR
 LEMMA OneBConstructBoundedRW ==
   ASSUME MessageInterfaceAssumptions, LearnerGraphAssumptions, AcceptorsAssumptions,
          Inv, KnownTranClosureInvT, SelfSentBoundedInvT, SelfSentNotProposalInvT,
-         NEW self \in SafeAcceptors, NEW p \in Proposals, NEW bal \in Ballots,
+         NEW self \in SafeAcceptors, self \in LiveAcceptors,
+         NEW p \in Proposals, NEW bal \in Ballots,
          OneBCBHypR(self, p, bal)
   PROVE \E known \in SUBSET Messages :
         /\ known \subseteq Msgs
@@ -25,7 +26,7 @@ LEMMA OneBConstructBoundedRW ==
                                         \cup {mm \in Msgs : Sig(mm) = self}))
   BY DEF OneBCBHypR
 <1>h6. B(p) > bal  BY DEF OneBCBHypR
-<1>h7. \A z \in Proposals : ((z \in Msgs) /\ (B(z) > bal)) =>
+<1>h7. \A z \in Proposals : ((z \in RelevantMsgs) /\ (B(z) > bal)) =>
          ((V(z) = V(p)) /\ ((B(z) < B(p)) \/ (z = p)))
   BY DEF OneBCBHypR
 <1> QED BY <1>h1, <1>h2, <1>h3, <1>h4, <1>h5, <1>h6, <1>h7, OneBConstructBoundedR

@@ -13,10 +13,10 @@ THEOREM TemporalDecideableProposalExists ==
   \A alpha \in Learners :
   \A bal \in Ballots :
   \* M are all the ever-sent messages with bal or lower.  We take M over an
-  \* abstract IsAllMessagesEverSent set so the defining predicate (B(m) <= bal)
+  \* abstract IsAllMessagesEverKnown set so the defining predicate (B(m) <= bal)
   \* is non-temporal -- no <> inside the set-builder (keeps SANY level-clean).
   \A allmessages :
-  IsAllMessagesEverSent(allmessages) =>
+  IsAllMessagesEverKnown(allmessages) =>
   LET M == {m \in allmessages : B(m) <= bal}
   IN \E p \in Proposals :
      (/\ TranExclusive(p) = DecideableProposalTranExclusive(M)
@@ -26,7 +26,7 @@ THEOREM TemporalDecideableProposalExists ==
 <1> SUFFICES ASSUME Spec, MessageInterfaceAssumptions, ValueInterfaceAssumptions,
                     LearnerGraphAssumptions, NetworkAssumption,
                     NEW alpha \in Learners, NEW bal \in Ballots,
-                    NEW allmessages, IsAllMessagesEverSent(allmessages)
+                    NEW allmessages, IsAllMessagesEverKnown(allmessages)
              PROVE LET M == {m \in allmessages : B(m) <= bal}
                    IN \E p \in Proposals :
                       (/\ TranExclusive(p) = DecideableProposalTranExclusive(M)
@@ -37,8 +37,8 @@ THEOREM TemporalDecideableProposalExists ==
 <1> DEFINE M == {m \in allmessages : B(m) <= bal}
 <1>amsub. allmessages \subseteq Messages
   <2> SUFFICES ASSUME NEW mm \in allmessages PROVE mm \in Messages  OBVIOUS
-  <2>1. mm \in allmessages <=> IAMESCond(mm)  BY DEF IsAllMessagesEverSent
-  <2> QED  BY <2>1 DEF IAMESCond
+  <2>1. mm \in allmessages <=> IAMEKCond(mm)  BY DEF IsAllMessagesEverKnown
+  <2> QED  BY <2>1 DEF IAMEKCond
 <1>Msub. M \subseteq Messages  BY <1>amsub
 <1>mi. TypeOKMessageInterface /\ TranTrans /\ TranFinite /\ AlwaysAProposal
   BY DEF MessageInterfaceAssumptions
