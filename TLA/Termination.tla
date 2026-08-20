@@ -1,7 +1,7 @@
 ------------------------------ MODULE Termination ------------------------------
 EXTENDS HPaxosPlusCal, BBallot,
         IsAllMessagesEverKnownExists, TemporalDecideableProposalExists,
-        TerminatingProposal, KnowLeadsToTranW, KnownToLiveElem, KnownDiaMem,
+        TerminatingProposal, KnowLeadsToTranW, KnownToLiveElem,
         QuorumsHaveMembers
 LOCAL INSTANCE TLAPS
 
@@ -21,8 +21,11 @@ THEOREM Termination ==
   ) =>
   \* there is some "correct" proposal p such that
   \E p \in Proposals :
-  (( \* If p is the only proposal with ballot > bal that will ever be sent
-   /\ \A x \in Proposals : (((<>(x \in Msgs)) /\ (B(x) > bal)) => (x = p))
+  (( \* If p is the only proposal with ballot > bal that will ever be KNOWN
+     \* to a live acceptor (others may be SENT, as long as nobody live ever
+     \* learns them -- under the weakened NetworkAssumption nothing forces
+     \* Byzantine-signed junk to be learned)
+   /\ \A x \in Proposals : (((<>KnownToLive(x)) /\ (B(x) > bal)) => (x = p))
      \* and p is eventually sent
    /\ <>(p \in Msgs)
      \* and receiving p and its history is weakly fair for live acceptors
@@ -38,7 +41,7 @@ THEOREM Termination ==
                     LiveAcceptors \in Quorums(alpha),
                     SafeAcceptors \in SafetySets({alpha})
              PROVE  \E p \in Proposals :
-                    (( /\ \A x \in Proposals : (((<>(x \in Msgs)) /\ (B(x) > bal)) => (x = p))
+                    (( /\ \A x \in Proposals : (((<>KnownToLive(x)) /\ (B(x) > bal)) => (x = p))
                        /\ <>(p \in Msgs)
                        /\ TranFairness(p)
                     ) => <> Decision(Msgs, alpha, B(p)))
@@ -68,7 +71,7 @@ THEOREM Termination ==
   BY <1>tdpe
 <1>ppmsg. p \in Messages  BY <1>mi DEF TypeOKMessageInterface
 <1> WITNESS p \in Proposals
-<1> SUFFICES ASSUME \A x \in Proposals : (((<>(x \in Msgs)) /\ (B(x) > bal)) => (x = p)),
+<1> SUFFICES ASSUME \A x \in Proposals : (((<>KnownToLive(x)) /\ (B(x) > bal)) => (x = p)),
                     <>(p \in Msgs), TranFairness(p)
              PROVE  <> Decision(Msgs, alpha, B(p))
   OBVIOUS
@@ -100,11 +103,9 @@ THEOREM Termination ==
 <1>uniqam. \A x \in allmessages : ((IsProposal(x) /\ (B(x) > bal)) => (x = p))
   <2> SUFFICES ASSUME NEW x \in allmessages, IsProposal(x), B(x) > bal PROVE x = p  OBVIOUS
   <2>xp. x \in Proposals  BY DEF IsProposal
-  <2>dm. Spec => (IsAllMessagesEverKnown(allmessages)
-                  => (x \in allmessages => DiaMem(x)))
-    BY KnownDiaMem
-  <2>xnet. <>(x \in Msgs)  BY <2>dm DEF DiaMem
-  <2> QED  BY <2>xp, <2>xnet
+  <2>xa. x \in allmessages <=> IAMEKCond(x)  BY DEF IsAllMessagesEverKnown
+  <2>dk. <>KnownToLive(x)  BY <2>xa DEF IAMEKCond
+  <2> QED  BY <2>xp, <2>dk
 <1> QED
   BY <1>amsub, <1>isprop, <1>signa, <1>bpgt, <1>uniqam, <1>teq, <1>veq, <1>iame, <1>pam,
      TerminatingProposal

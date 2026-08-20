@@ -138,10 +138,13 @@ value, and connectivity conditions on `allmessages` now constrain only what
 live acceptors ever learn. Byzantine-signed junk that is sent but never
 received by anyone live is outside `allmessages`, so e.g. a Byzantine
 proposer may broadcast competing high-ballot proposals with impunity as long
-as no live acceptor ever learns them. (`Termination`'s own surface
-uniqueness hypothesis is still phrased over `<>(x \in Msgs)` — the sent
-form; it could be weakened to the ever-known form with a two-line change,
-since only its `allmessages`-restriction is ever used.)
+as no live acceptor ever learns them. `Termination`'s surface uniqueness
+hypothesis is phrased the same way (`<>KnownToLive(x)`, not `<>(x \in
+Msgs)`): the `<>` sits in the antecedent of a universal constraint, so the
+ever-known form constrains fewer messages and is the weaker hypothesis.  The
+trigger stays `<>(p \in Msgs)` — there the `<>` occurs positively, so the
+SENT form is the weaker hypothesis, and `TranFairness(p)` converts p's
+transmission into receipt.
 
 ## What had to move
 
