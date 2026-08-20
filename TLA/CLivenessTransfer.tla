@@ -25,10 +25,10 @@
 \* The \A over WF_ is routed through the opaque WFAbsOp: a quantifier over a
 \* TEMPORAL body cannot be instantiated or introduced directly by any backend,
 \* but over an opaque operator application it is ordinary first-order work.
-EXTENDS HPaxosPlusCalConcrete, CWFTransferAt, CRefinesAbstract, TLAPS
+EXTENDS HPaxosPlusCalConcrete, CRelWFTransferAt, CRefinesAbstract, TLAPS
 
-WFAbsOp(self) == WF_vars(safe_acceptor_receives_message(self))
-WFConOp(self) == WF_CVars(CSafeStep(self))
+WFAbsOp(self) == WF_vars(relevant_receive(self))
+WFConOp(self) == WF_CVars(CRelevantStep(self))
 
 THEOREM CLivenessTransfer ==
   ASSUME ConcreteMessageInterface, AcceptorsAssumptions
@@ -47,7 +47,7 @@ THEOREM CLivenessTransfer ==
     <3>1. CNetworkAssumption => WFConOp(self)
       BY DEF CNetworkAssumption, WFConOp
     <3>2. CSpec /\ WFConOp(self) => WFAbsOp(self)
-      BY CWFTransferAt DEF WFAbsOp, WFConOp
+      BY CRelWFTransferAt DEF WFAbsOp, WFConOp
     <3> QED
       BY <3>1, <3>2
   <2> HIDE DEF WFAbsOp

@@ -9,6 +9,6 @@ EXTENDS HPaxosPlusCal
 \* tuple instance via ordinary lemma application (which unifies fine) instead.
 LEMMA NetworkAssumptionInst ==
   ASSUME NEW self \in LiveAcceptors \times Messages, NetworkAssumption
-  PROVE  WF_vars(safe_acceptor_receives_message(self))
+  PROVE  WF_vars(relevant_receive(self))
 BY DEF NetworkAssumption
 ====================================================================

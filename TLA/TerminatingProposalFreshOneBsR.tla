@@ -9,7 +9,7 @@ LEMMA TerminatingProposalFreshOneBsR ==
   ASSUME Spec, MessageInterfaceAssumptions, ValueInterfaceAssumptions,
          LearnerGraphAssumptions, AcceptorsAssumptions, NetworkAssumption,
          NEW alpha \in Learners, NEW allmessages \in SUBSET Messages,
-         NEW bal \in Ballots, NEW p \in Proposals,
+         NEW bal \in Ballots, NEW p \in Proposals, TranFairness(p),
          NEW M, M = {mm \in allmessages : B(mm) <= bal},
          DecideableProposalTranExclusive(M) \subseteq Tran(p),
          V(p) = DecideableProposalV(alpha, bal, M),
@@ -39,7 +39,7 @@ LEMMA TerminatingProposalFreshOneBsR ==
   <2> QED  BY <2>3 DEF IAMESCond
 <1>hyp. DZLTHypR(alpha, bal, M, p, allmessages)
   BY <1>high, <1>low, <1>amb DEF DZLTHypR
-<1>dz. (Spec /\ NetworkAssumption)
+<1>dz. (Spec /\ TranFairness(p))
        => ((p \in Msgs) ~> (\E y \in Msgs : Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,0)))
   BY <1>mmsg, <1>hyp, DepthZeroLeadsToRW
 <1>lt. (p \in Msgs) ~> (\E y \in Msgs : Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,0))

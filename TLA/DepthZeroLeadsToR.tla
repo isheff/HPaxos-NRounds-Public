@@ -1,5 +1,5 @@
 -------------------------- MODULE DepthZeroLeadsToR --------------------------
-EXTENDS HPaxosPlusCal, KnowLeadsToW, DepthZeroKnownImpliesSentR
+EXTENDS HPaxosPlusCal, KnowLeadsToTranW, DepthZeroKnownImpliesSentR
 LOCAL INSTANCE TLAPS
 
 \* Relaxed Step-5 leads-to: once p is on the network, live acceptor a
@@ -21,13 +21,14 @@ LEMMA DepthZeroLeadsToR ==
          []LowNowT(bal, m),
          []AmNowT(am),
          NEW a \in LiveAcceptors
-  PROVE (Spec /\ NetworkAssumption) =>
+  PROVE (Spec /\ TranFairness(p)) =>
         ((p \in Msgs) ~> (\E y \in Msgs : Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,0)))
 <1>pmsg. p \in Messages
   BY MessageInterfaceAssumptions DEF MessageInterfaceAssumptions, TypeOKMessageInterface
-<1>kltop. KLT(a, p)  BY <1>pmsg, KnowLeadsToW
-<1>klt. (Spec /\ NetworkAssumption) => ((p \in Msgs) ~> (p \in known_messages[a]))
-  BY <1>kltop DEF KLT
+<1>ptp. p \in Tran(p)  BY DEF Tran
+<1>kltop. KLTT(p, a, p)  BY <1>pmsg, <1>ptp, KnowLeadsToTranW
+<1>klt. (Spec /\ TranFairness(p)) => ((p \in Msgs) ~> (p \in known_messages[a]))
+  BY <1>kltop DEF KLTT
 <1>inv. Spec => [](p \in known_messages[a] =>
                      \E y \in Msgs : Sig(y)=a /\ B(y)=B(p) /\ HasDepth(alpha,y,0))
   BY DepthZeroKnownImpliesSentR

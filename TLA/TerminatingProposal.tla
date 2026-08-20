@@ -35,10 +35,14 @@ THEOREM TerminatingProposal ==
       \*  allmessages is actually the set of messages that can ever be received
       \*  by SafeAcceptors.
    /\ IsAllMessagesEverSent(allmessages)
+      \* WEAKENED NetworkAssumption never forces the FIRST receipt of the
+      \* Byzantine-signed proposal p (or of its history, which gates it), so
+      \* fairness over Tran(p) is assumed separately.
+   /\ TranFairness(p)
    \* then alpha decides on ballot B(p)
    ) => <> Decision(Msgs, alpha, B(p))
 <1> SUFFICES ASSUME NEW alpha \in Learners, NEW bal \in Ballots, NEW allmessages,
-                    NEW p \in allmessages,
+                    NEW p \in allmessages, TranFairness(p),
                     Spec, MessageInterfaceAssumptions, ValueInterfaceAssumptions,
                     LearnerGraphAssumptions, AcceptorsAssumptions, NetworkAssumption,
                     LiveAcceptors \in Quorums(alpha),

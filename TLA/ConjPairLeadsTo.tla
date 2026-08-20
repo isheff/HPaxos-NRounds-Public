@@ -3,7 +3,7 @@
 \* are top-level and hideable so that \A-over-temporal ELIMINATION is
 \* first-order over opaque symbols -- plain \A-elim of a temporal body is
 \* unsupported by every TLAPS backend. The leads-to SOURCE is
-\* (Src \subseteq Msgs) for a SET parameter Src, not a temporal parameter,
+\* (Src \subseteq RelevantMsgs) for a SET parameter Src, not a temporal parameter,
 \* because temporal parameters cannot be instantiated on application.
 EXTENDS HPaxosPlusCal, FiniteSetTheorems,
         BoxTgtEmpty, BoxTgtSplit, KnownStablePair
@@ -26,7 +26,7 @@ LEMMA ConjPairLeadsTo ==
       BY DEF CP_Hyp
     <3>1. CASE U = {}
       <4>box. Spec => [](CP_Tgt(U))  BY <3>1, BoxTgtEmpty
-      <4>2. (Spec /\ NetworkAssumption) => ((Src \subseteq Msgs) ~> CP_Tgt(U))
+      <4>2. (Spec /\ NetworkAssumption) => ((Src \subseteq RelevantMsgs) ~> CP_Tgt(U))
         BY <4>box, PTL
       <4>3. Spec => [](CP_Tgt(U) => []CP_Tgt(U))  BY <4>box, PTL
       <4> QED  BY <4>2, <4>3 DEF CP_Good
@@ -45,13 +45,13 @@ LEMMA ConjPairLeadsTo ==
         <5>a. (CP_Hyp(Src, U0) /\ Cardinality(U0) = n - 1) => CP_Good(Src, U0)
           BY <5>q DEF Q
         <5> QED  BY <5>a, <4>U0h, <4>U0f
-      <4>lt0. (Spec /\ NetworkAssumption) => ((Src \subseteq Msgs) ~> CP_Tgt(U0))
+      <4>lt0. (Spec /\ NetworkAssumption) => ((Src \subseteq RelevantMsgs) ~> CP_Tgt(U0))
         BY <4>gU0 DEF CP_Good
       <4>st0. Spec => [](CP_Tgt(U0) => []CP_Tgt(U0))  BY <4>gU0 DEF CP_Good
       <4>p0m. p0[1] \in SafeAcceptors /\ p0[2] \in Messages  BY <4>0, <3>hyp
       <4>p0lt0. \A p \in U : CP_LT(Src, p)  BY <3>hyp
       <4>p0lt. (Spec /\ NetworkAssumption)
-                 => ((Src \subseteq Msgs) ~> (p0[2] \in known_messages[p0[1]]))
+                 => ((Src \subseteq RelevantMsgs) ~> (p0[2] \in known_messages[p0[1]]))
         <5>1. CP_LT(Src, p0)  BY <4>p0lt0, <4>0
         <5> QED  BY <5>1 DEF CP_LT
       <4>p0pair. p0 \in SafeAcceptors \X Messages  BY <4>0, <3>hyp
@@ -60,9 +60,9 @@ LEMMA ConjPairLeadsTo ==
         BY <4>p0pair, KnownStablePair
       <4>boxsplit. Spec => [](CP_Tgt(U) <=> (CP_Tgt(U0) /\ p0[2] \in known_messages[p0[1]]))
         BY <4>0, BoxTgtSplit
-      <4>ltU. (Spec /\ NetworkAssumption) => ((Src \subseteq Msgs) ~> CP_Tgt(U))
+      <4>ltU. (Spec /\ NetworkAssumption) => ((Src \subseteq RelevantMsgs) ~> CP_Tgt(U))
         <5>1. (Spec /\ NetworkAssumption)
-                => ((Src \subseteq Msgs) ~> (CP_Tgt(U0) /\ p0[2] \in known_messages[p0[1]]))
+                => ((Src \subseteq RelevantMsgs) ~> (CP_Tgt(U0) /\ p0[2] \in known_messages[p0[1]]))
           BY <4>lt0, <4>p0lt, <4>st0, <4>p0st, PTL
         <5> QED  BY <5>1, <4>boxsplit, PTL
       <4>stU. Spec => [](CP_Tgt(U) => []CP_Tgt(U))

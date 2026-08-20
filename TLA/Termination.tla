@@ -23,6 +23,10 @@ THEOREM Termination ==
    /\ \A x \in Proposals : (((<>(x \in Msgs)) /\ (B(x) > bal)) => (x = p))
      \* and p is eventually sent
    /\ <>(p \in Msgs)
+     \* and receiving p and its history is weakly fair for live acceptors
+     \* (the WEAKENED NetworkAssumption never forces the FIRST receipt of a
+     \*  Byzantine-signed proposal, so this is assumed for p separately)
+   /\ TranFairness(p)
   ) =>
   \* alpha eventually decides
   <> Decision(Msgs, alpha, B(p)))
@@ -34,6 +38,7 @@ THEOREM Termination ==
              PROVE  \E p \in Proposals :
                     (( /\ \A x \in Proposals : (((<>(x \in Msgs)) /\ (B(x) > bal)) => (x = p))
                        /\ <>(p \in Msgs)
+                       /\ TranFairness(p)
                     ) => <> Decision(Msgs, alpha, B(p)))
   OBVIOUS
 <1>mi. TypeOKMessageInterface /\ TranTrans /\ TranFinite /\ AlwaysAProposal /\ TranAcyclic
@@ -62,7 +67,7 @@ THEOREM Termination ==
 <1>ppmsg. p \in Messages  BY <1>mi DEF TypeOKMessageInterface
 <1> WITNESS p \in Proposals
 <1> SUFFICES ASSUME \A x \in Proposals : (((<>(x \in Msgs)) /\ (B(x) > bal)) => (x = p)),
-                    <>(p \in Msgs)
+                    <>(p \in Msgs), TranFairness(p)
              PROVE  <> Decision(Msgs, alpha, B(p))
   OBVIOUS
 <1>teq. TranExclusive(p) = DecideableProposalTranExclusive({m \in allmessages : B(m) <= bal})

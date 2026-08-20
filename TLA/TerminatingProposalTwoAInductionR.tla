@@ -11,7 +11,7 @@ LEMMA TerminatingProposalTwoAInductionR ==
   ASSUME Spec, MessageInterfaceAssumptions, ValueInterfaceAssumptions,
          LearnerGraphAssumptions, AcceptorsAssumptions, NetworkAssumption,
          NEW alpha \in Learners, NEW allmessages \in SUBSET Messages,
-         NEW bal \in Ballots, NEW p \in Proposals,
+         NEW bal \in Ballots, NEW p \in Proposals, TranFairness(p),
          NEW M, M = {m \in allmessages : B(m) <= bal},
          DecideableProposalTranExclusive(M) \subseteq Tran(p),
          V(p) = DecideableProposalV(alpha, bal, M),

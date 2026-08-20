@@ -51,6 +51,14 @@ LEMMA TwoAStepLtProduceR ==
     BY DEF WPrimeStep
   <2>2. w \in am  BY <2>1, <1>ch
   <2> QED  BY <2>2
+<1>wsigl. \A w \in WPrimeStep(am, alpha, p, d) : Sig(w) \in LiveAcceptors
+  <2> SUFFICES ASSUME NEW w \in WPrimeStep(am, alpha, p, d) PROVE Sig(w) \in LiveAcceptors
+    OBVIOUS
+  <2>1. PICK aa \in LiveAcceptors :
+          w = CHOOSE x \in am : (Sig(x)=aa /\ B(x)=B(p) /\ HasDepth(alpha,x,d))
+    BY DEF WPrimeStep
+  <2>2. Sig(w) = aa  BY <2>1, <1>ch
+  <2> QED  BY <2>1, <2>2
 <1> SUFFICES ASSUME NEW s \in LiveAcceptors
              PROVE  IsAllMessagesEverSent(am) => TwoAStepLtOp(am, alpha, p, d, s)
   OBVIOUS
@@ -69,6 +77,20 @@ LEMMA TwoAStepLtProduceR ==
   <2> QED  BY <2>1, <2>2, PTL DEF Spec
 <1>safe0. TwoASafeConcl(am, alpha, p, d, s, WPrimeStep(am, alpha, p, d))
   BY <1>wshape, <1>wsig, <1>ssafe, TwoASafeProduceR
+\* every WPrimeStep witness is live-SIGNED, so on the network it is
+\* live-relevant: bridge the weakened EKLT source back to a plain Msgs
+\* source.  Proven here, while IsAll (raw-temporal) is NOT ambient.
+<1>relbox. Spec => [](WPrimeStep(am, alpha, p, d) \subseteq Msgs
+                      => WPrimeStep(am, alpha, p, d) \subseteq RelevantMsgs)
+  <2>i. Init => (WPrimeStep(am, alpha, p, d) \subseteq Msgs
+                 => WPrimeStep(am, alpha, p, d) \subseteq RelevantMsgs)
+    BY <1>wsigl DEF RelevantMsgs, LiveRelevant
+  <2>s. (WPrimeStep(am, alpha, p, d) \subseteq Msgs
+         => WPrimeStep(am, alpha, p, d) \subseteq RelevantMsgs) /\ [Next]_vars
+        => (WPrimeStep(am, alpha, p, d) \subseteq Msgs
+            => WPrimeStep(am, alpha, p, d) \subseteq RelevantMsgs)'
+    BY <1>wsigl DEF RelevantMsgs, LiveRelevant
+  <2> QED  BY <2>i, <2>s, PTL DEF Spec
 \* now bring in IsAll, Spec, NetworkAssumption and compose the leads-to:
 <1> SUFFICES ASSUME IsAllMessagesEverSent(am), Spec, NetworkAssumption
              PROVE  (WPrimeStep(am, alpha, p, d) \subseteq Msgs)
@@ -76,9 +98,15 @@ LEMMA TwoAStepLtProduceR ==
   BY DEF TwoAStepLtOp
 <1>ekinv. []EventuallyKnownInvariant  BY AlwaysEventuallyKnownInvariant
 <1>ekl. EKLT(WPrimeStep(am, alpha, p, d))  BY <1>ekinv, <1>wsm, EKExtract
+<1>ekR. (WPrimeStep(am, alpha, p, d) \subseteq RelevantMsgs)
+        ~> (\A a \in LiveAcceptors : WPrimeStep(am, alpha, p, d) \subseteq known_messages[a])
+  BY <1>ekl DEF EKLT
+<1>relboxb. [](WPrimeStep(am, alpha, p, d) \subseteq Msgs
+               => WPrimeStep(am, alpha, p, d) \subseteq RelevantMsgs)
+  BY <1>relbox
 <1>ek. (WPrimeStep(am, alpha, p, d) \subseteq Msgs)
        ~> (\A a \in LiveAcceptors : WPrimeStep(am, alpha, p, d) \subseteq known_messages[a])
-  BY <1>ekl DEF EKLT
+  BY <1>ekR, <1>relboxb, PTL
 <1>elimb. [](( \A a \in LiveAcceptors : WPrimeStep(am, alpha, p, d) \subseteq known_messages[a])
              => WPrimeStep(am, alpha, p, d) \subseteq known_messages[s])
   BY <1>elim

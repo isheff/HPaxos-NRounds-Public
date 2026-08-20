@@ -239,7 +239,19 @@ CSpec == CInit /\ [][CNext]_CVars
 \* message -- a live acceptor could be starved of one x forever while it keeps
 \* learning others.  Imposing WF per (acceptor, message) pair, restricted to
 \* LiveAcceptors, is exactly what we need.
-CNetworkAssumption == \A self \in LiveAcceptors \times Messages : WF_CVars(CSafeStep(self))
+\*
+\* WEAKENED to match HPaxosPlusCal's weakened NetworkAssumption: fairness is
+\* owed only for LIVE-RELEVANT messages (sent by, or known to, some live
+\* acceptor -- LiveRelevant is HPaxosPlusCal's, over the shared variables).
+CRelevantStep(self) == CSafeStep(self) /\ LiveRelevant(self[2])
+
+CNetworkAssumption ==
+  \A self \in LiveAcceptors \times Messages : WF_CVars(CRelevantStep(self))
+
+\* Unconditional per-message fairness over Tran(pp), the concrete counterpart
+\* of HPaxosPlusCal's TranFairness (see CTranFairnessTransfer).
+CTranFairness(pp) ==
+  \A self \in LiveAcceptors \times Tran(pp) : WF_CVars(CSafeStep(self))
 
 
 \* ===================================================================
