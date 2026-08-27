@@ -6,7 +6,7 @@
 EXTENDS AsymmetricTriangle
 LOCAL INSTANCE TLAPS
 
-LEMMA TriangleF1Char ==
+THEOREM TriangleF1Char ==
   ASSUME NEW pa, NEW pb, NEW pc, pa # pb, pb # pc, pa # pc,
          NEW ff \in SUBSET {pa, pb, pc}
   PROVE  (ff \in TriF1(pa, pb, pc))
